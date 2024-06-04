@@ -4,7 +4,7 @@ const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
-const database = require('./database/database');
+// const database = require('./database/database');
 
 const app = express();
 const port = 4000;
@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 app.get('/words', async (req, res) => {
-    const connection = await database.getConnection();
+    const connection =false;
 
     if (!connection) {
         return res.json({ message: 'Not connected to the database' });
