@@ -23,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 app.get('/words', async (req, res) => {
-    const connection = false;
+    const connection = await database.getConnection();
 
     if (!connection) {
         return res.json({ message: 'Not connected to the database' });
