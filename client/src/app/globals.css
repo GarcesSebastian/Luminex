@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(230, 230, 230);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+#range-video {
+  -webkit-appearance: none;
+  appearance: none; 
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: transparent;
+}
+
+#range-video::-webkit-slider-runnable-track {
+  height: 15px;
+  background: transparent;
+  border-radius: 16px;
+}
+
+#range-video::-moz-range-track {
+  height: 15px;
+  background: transparent;
+  border-radius: 16px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none; 
+  height: 15px;
+  width: 15px;
+  background-color: transparent;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: -407px 0 0 400px transparent;
+}
+
+#range-video::-moz-range-thumb {
+  height: 15px;
+  width: 15px;
+  background-color: transparent;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  box-shadow: -407px 0 0 400px transparent;
+}
+
+:root {
+  --RANGE-VALUE: 100%;
+  --C-MAIN: rgb(79 70 229);
+  --C-GREY: #e3e4e8;
+}
+
+#range-sound {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(
+    to right, 
+    var(--C-MAIN) var(--RANGE-VALUE),
+    var(--C-GREY) 0);
+  border-radius: 1.5px;
+}
+
+#range-sound::before {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--RANGE-VALUE);
+  background-color: var(--C-MAIN);
+  filter: blur(8px);
+  opacity: .8;
+border-radius: 1.5px;
+}
