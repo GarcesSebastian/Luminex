@@ -9,8 +9,15 @@ const app = express();
 const port = 4000;
 
 // Aumentar el límite de tamaño de carga en body-parser
-app.use(bodyParser.json({ limit: '100mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
+app.use(bodyParser.json({ limit: '500mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
+
+// Middleware para establecer encabezados y tamaños de carga
+app.use((req, res, next) => {
+    res.setHeader('Content-Type', 'multipart/form-data');
+    req.headers['content-length'] = '524288000'; // 500MB
+    next();
+});
 
 // Configuración de Multer para almacenamiento de archivos
 const storage = multer.diskStorage({
@@ -29,7 +36,7 @@ const storage = multer.diskStorage({
 // Aumentar el límite de tamaño de archivo en multer
 const upload = multer({ 
     storage,
-    limits: { fileSize: 100 * 1024 * 1024 } // 100 MB
+    limits: { fileSize: 500 * 1024 * 1024 } // 500 MB
 });
 
 app.get('/', (req, res) => {
