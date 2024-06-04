@@ -18,6 +18,10 @@ const port = 4000;
 //     next();
 // });
 
+app.get("/", (req, res) => {
+    res.send("Hello World");
+});
+
 app.get('/words', async (req, res) => {
     const connection = await database.getConnection();
 
