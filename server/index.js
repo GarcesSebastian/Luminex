@@ -1,17 +1,31 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
-const multer = require('multer');
 
 const app = express();
 const port = 4000;
 
-const upload = multer({ dest: 'uploads/' });
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Configuración de Multer para almacenamiento de archivos
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = 'uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage });
 
 app.get('/', (req, res) => {
     res.json({
@@ -30,10 +44,12 @@ app.post('/generate-thumbnails', upload.single('video'), (req, res) => {
     const outputDir = 'output_thumbnails';
     const outputImagePath = path.join(outputDir, 'combined_thumbnails.jpg');
 
+    // Crear el directorio de salida si no existe
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir);
     }
 
+    // Número de thumbnails
     const thumbnailsPerImage = rows * columns;
 
     ffmpeg(videoPath)
