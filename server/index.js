@@ -12,9 +12,6 @@ const port = 4000;
 app.use(bodyParser.json({ limit: '500mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
 
-// Elimina el middleware que establece el Content-Type como multipart/form-data
-// Este middleware no es necesario y está causando que las respuestas se manejen incorrectamente
-
 app.get("/", (req, res) => {
     res.send("Hello World");
 });
