@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Options from './MediaPlayer/Options';
 import VideoPlayer from './MediaPlayer/VideoPlayer';
-import * as States from '../js/States';
+import * as States from '../ts/States';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
@@ -64,6 +64,7 @@ export default function MediaPlayer() {
         }
 
     },[isView])
+    
 
     const getThumbnailForVideo: any = async (videoUrl: string, seekTime: number) => {
         const video = document.createElement("video");
@@ -99,9 +100,8 @@ export default function MediaPlayer() {
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-
-        if(isUploading) return;
-
+        if (isUploading) return;
+    
         setVideoSrc("");
         setNamePlayer("");
         setDuration(0);
@@ -109,7 +109,7 @@ export default function MediaPlayer() {
         setCurrentTime(0);
         setIsUploading(false);
         setPlaying(false);
-
+    
         const file = e.target.files?.[0];
         if (file) {
             setIsCounting(true);
@@ -117,21 +117,21 @@ export default function MediaPlayer() {
             setVideoSrc(videoURL);
             setNamePlayer(file.name);
             setIsUploading(true);
-
+    
             const contentProgressBar = document.querySelector("#content_progressBar");
             const progressBar = document.querySelector("#progress-value") as HTMLElement;
             const list_files = document.querySelector("#list-files");
             if (list_files) {
-                list_files.classList.remove("hidden")
+                list_files.classList.remove("hidden");
                 list_files.classList.add("grid");
             };
-
+    
             if (contentProgressBar) contentProgressBar.classList.remove("hidden");
-
+    
             const video = document.createElement("video");
             video.src = videoURL;
             let intervals: number[] = Array.from([]);
-
+    
             await new Promise<void>((resolve) => {
                 video.addEventListener("loadedmetadata", () => {
                     setDuration(video.duration);
@@ -142,39 +142,60 @@ export default function MediaPlayer() {
                     resolve();
                 });
             });
-
-            console.log(intervals)
-
+    
+            console.log(intervals);
+    
             const generateThumbnails = async () => {
                 for (const interval of intervals) {
-
                     const percentage = interval * 100;
                     setProgress(percentage / intervals.length);
-
+    
                     if (progressBar){
                         progressBar.style.width = (percentage / intervals.length) + "%";
                     }
-
+    
                     const seekTime = (interval / intervals.length) * (video.duration ?? 0);
                     const imageURL = await getThumbnailForVideo(videoURL, seekTime);
                     (document.querySelector("#frameTest") as HTMLImageElement).src = imageURL;
                     setThumbnails((prevThumbnails: any) => [...prevThumbnails, imageURL]);
                 }
-
+    
                 const contentVideo = document.querySelector("#content-video");
-
-
+    
                 if (contentVideo) contentVideo.classList.remove("hidden");
                 if (progressBar) progressBar.style.width = "100%";
-
+    
                 setIsUploading(false);
                 setPlaying(false);
                 setIsCounting(false);
             };
-
+    
             generateThumbnails();
+    
+            const formData = new FormData();
+            formData.append('file', file);
+    
+            try {
+                const response = await fetch('http://localhost:4000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+    
+                if (response.ok) {
+                    const result = await response.json();
+                    const firstImageUrl = result.images[0];
+                    console.log('Video file uploaded successfully');
+    
+                    (document.querySelector("#frameTestt") as HTMLImageElement).src = `http://localhost:4000/${firstImageUrl}`;
+                } else {
+                    console.log('Failed to upload video file');
+                }
+            } catch (error) {
+                console.log('Error uploading video file:', error);
+            }
         }
     };
+    
     
     const handlePlayVideo = () => {
         if (!videoElement) {
@@ -239,11 +260,15 @@ export default function MediaPlayer() {
 
             {videoSrc && (
                 <div className='w-fit h-fit flex flex-col gap-y-4 pt-4'>
-                    <div id="content-frame-test" className="flex-col relative top-0 hidden gap-y-1 justify-center w-full max-w-2xl h-fit items-center p-1 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md">
+                    <div id="content-frame-test" className="flex-col relative top-0 flex gap-y-1 justify-center w-full max-w-2xl h-fit items-center p-1 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md">
                         <img id="frameTest" src="https://placehold.co/150x100" className="w-full h-full object-cover rounded-md" />
                     </div>
                 </div>
             )}
+
+            <div id="content-frame-testt" className="flex-col relative top-0 hidden gap-y-1 justify-center w-full max-w-2xl h-fit items-center p-1 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md">
+                <img id="frameTestt" src="https://placehold.co/150x100" className="w-full h-full object-cover rounded-md" />
+            </div>
 
             <div className="w-full max-w-2xl grid relative gap-5 mb-10">
                 <div className="w-full py-9 bg-gray-50 rounded-2xl border border-gray-300 border-dashed">
