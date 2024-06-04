@@ -8,8 +8,9 @@ const fs = require('fs');
 const app = express();
 const port = 4000;
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Aumentar el límite de tamaño de carga en body-parser
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 
 // Configuración de Multer para almacenamiento de archivos
 const storage = multer.diskStorage({
@@ -25,7 +26,11 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage });
+// Aumentar el límite de tamaño de archivo en multer
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 100 * 1024 * 1024 } // 100 MB
+});
 
 app.get('/', (req, res) => {
     res.json({
