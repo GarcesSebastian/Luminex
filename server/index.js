@@ -26,10 +26,12 @@ app.post('/generate-thumbnails', (req, res) => {
     const outputDir = 'output_thumbnails';
     const outputImagePath = path.join(outputDir, 'combined_thumbnails.jpg');
 
+    // Crear el directorio de salida si no existe
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir);
     }
 
+    // Número de thumbnails
     const thumbnailsPerImage = rows * columns;
 
     ffmpeg(videoPath)
