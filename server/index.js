@@ -9,7 +9,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.json({
+        message: 'Hello World!',
+    })
 });
 
 app.listen(port, () => {
