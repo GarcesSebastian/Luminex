@@ -3,9 +3,12 @@ const bodyParser = require('body-parser');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const port = 4000;
+
+const upload = multer({ dest: 'uploads/' });
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -16,8 +19,9 @@ app.get('/', (req, res) => {
     });
 });
 
-app.post('/generate-thumbnails', (req, res) => {
-    const { videoPath, rows, columns, interval } = req.body;
+app.post('/generate-thumbnails', upload.single('video'), (req, res) => {
+    const { rows, columns, interval } = req.body;
+    const videoPath = req.file.path;
 
     if (!videoPath || !rows || !columns || !interval) {
         return res.status(400).json({ error: 'Missing required parameters' });
@@ -26,12 +30,10 @@ app.post('/generate-thumbnails', (req, res) => {
     const outputDir = 'output_thumbnails';
     const outputImagePath = path.join(outputDir, 'combined_thumbnails.jpg');
 
-    // Crear el directorio de salida si no existe
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir);
     }
 
-    // Número de thumbnails
     const thumbnailsPerImage = rows * columns;
 
     ffmpeg(videoPath)
