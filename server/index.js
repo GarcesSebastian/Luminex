@@ -1,16 +1,16 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const multer = require('multer');
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
-const ffmpeg = require("fluent-ffmpeg");
+// const multer = require('multer');
+// const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+// const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+// const ffmpeg = require("fluent-ffmpeg");
 const cors = require('cors');
 // const sharp = require('sharp');
 const path = require('path');
 // const fs = require('fs');
 
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+// ffmpeg.setFfmpegPath(ffmpegPath);
+// ffmpeg.setFfprobePath(ffprobePath);
 
 const app = express();
 const port = 4000;
@@ -25,7 +25,7 @@ app.get("/", (req, res) => {
     res.send("Hello World");
 });
 
-const upload = multer({ dest: 'uploads/' });
+// const upload = multer({ dest: 'uploads/' });
 
 // app.post("/upload", upload.single('file'), async (req, res) => {
 //     const file = req.file;
