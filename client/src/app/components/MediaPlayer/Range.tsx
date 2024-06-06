@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
+import * as Globals from '../../ts/globals'
 
 export default function Range(props: any) {
     const [valuePreview, setValuePreview] = useState("00:00");
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+    const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
     const rangeRef = useRef<HTMLInputElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
     const previewFrameRef = useRef<HTMLImageElement>(null);
     const previewCurrentRef = useRef<HTMLLegendElement>(null);
+    const imageCurrentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         props.setValue(props.currentTime);
@@ -40,7 +43,7 @@ export default function Range(props: any) {
 
     const handleMouseEnter = () => {
         if (previewCurrentRef.current) {
-            previewCurrentRef.current.style.display = "flex";
+            previewCurrentRef.current.style.display = "initial";
         }
     };
 
@@ -48,11 +51,11 @@ export default function Range(props: any) {
         if (!(e.nativeEvent.offsetX > 0)) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left - (previewCurrentRef.current?.offsetWidth ?? 0) / 2;
-        const offsetY = e.currentTarget.offsetTop - (document.querySelector("#preview-current")?.clientHeight ?? 0) - 10;
+        const offsetX = e.clientX - rect.left - 75;
+        const offsetY = e.currentTarget.offsetTop - (document.querySelector("#preview-auto")?.clientHeight ?? 0) - 10;
         const rangeWidth = rect.width;
         const ratio = e.nativeEvent.offsetX / rangeWidth;
-        const umbral = rangeWidth - (document.querySelector("#preview-current")?.clientWidth ?? 0);
+        const umbral = rangeWidth - (document.querySelector("#preview-auto")?.clientWidth ?? 0);
         let newValuePreview: any = ratio * props.duration;
 
         const minutes = Math.floor(newValuePreview / 60);
@@ -64,9 +67,39 @@ export default function Range(props: any) {
         setMousePosition({ x: offsetX > umbral ? umbral + 5 : offsetX < 0 ? -5 : offsetX , y: offsetY });
         setValuePreview(formattedTime);
 
-        if (previewFrameRef.current) {
-            const index = Math.floor((newValuePreview * props.thumbnails.length) / props.duration);
-            previewFrameRef.current.src = props.thumbnails[index];
+        const positionInterval = Math.ceil(newValuePreview / 25)
+        
+        if(props.thumbnailFather != props.thumbnails[positionInterval - 1].image){
+            props.setThumbnailFather(props.thumbnails[positionInterval - 1].image);
+        }
+
+        const valueThumbnailFather = Math.ceil(newValuePreview);
+        
+        const umbralY = 5 * (positionInterval - 1);
+        let rows = Math.ceil(valueThumbnailFather / 5 - umbralY) == 0 ? 1 : Math.ceil(valueThumbnailFather / 5 - umbralY);
+        rows -= 1;
+
+        const Cl = Globals.DEFAULT_CEILING_THUMBNAIL;
+        const Cl_R = Cl * rows;
+        const Cl_R_Cl = Cl_R - Cl
+        const umbralX = (umbralY != 0 ? Math.pow(umbralY, 2) : 0) * (positionInterval - 1);
+        const columns = Math.ceil(((valueThumbnailFather - umbralX) - Cl_R_Cl)) - 6;
+
+        console.log("rows: " + rows);
+        console.log("columns: " + columns);
+        console.log("umbralX: " + umbralX);
+        console.log("Cl: " + Cl);
+        console.log("Cl_R: " + Cl_R);
+        console.log("Cl_R_Cl: " + Cl_R_Cl);
+        console.log("valueThumbnailFather: " + valueThumbnailFather);
+
+        const imagePositionX = columns * (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
+        const imagePositionY = rows * (Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
+
+        setImagePosition({ x: -imagePositionX, y: -imagePositionY });
+        if (imageCurrentRef.current) {
+            imageCurrentRef.current.style.top = -imagePositionY + 'px';
+            imageCurrentRef.current.style.left = -imagePositionX + 'px';
         }
     };
 
@@ -78,14 +111,14 @@ export default function Range(props: any) {
 
     return (
         <div className="w-full h-2 relative bg-red-500">
-            <span id="range-duration" className="w-full bg-gray-300 h-full absolute  cursor-pointer"></span>
-            <span id="range-progress" className="bg-indigo-600 h-full absolute  cursor-pointer transition-all duration-0"></span>
+            <span id="range-duration" className="w-full bg-gray-300 h-full absolute  cursor-pointer z-50"></span>
+            <span id="range-progress" className="bg-indigo-600 h-full absolute  cursor-pointer transition-all duration-0 z-50"></span>
 
             <input
                 ref={rangeRef}
                 type="range"
                 id="range-video"
-                className="h-full w-full absolute cursor-pointer"
+                className="h-full w-full absolute cursor-pointer z-50"
                 value={props.value}
                 min={0}
                 max={props.duration}
@@ -96,24 +129,17 @@ export default function Range(props: any) {
                 onMouseEnter={handleMouseEnter}
                 onMouseOut={handleMouseOut}
             />
-            <div
-                ref={previewCurrentRef}
-                id="preview-current"
-                className="flex-col relative top-0 hidden gap-y-0.5 justify-center w-[200px] h-[150px] items-center"
-                style={{ top: mousePosition.y, left: mousePosition.x }}
-            >
-                <span id="preview-frame" className="w-full h-full p-[3px] bg-indigo-600 rounded-md">
-                    <img
-                        ref={previewFrameRef}
-                        id="frame"
-                        src={previewFrameRef?.current?.src}
-                        className="w-full h-full object-cover rounded-[4px]"
-                    />
-                </span>
+
+
+            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y, left: mousePosition.x}} className='overflow-hidden absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
+                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000/${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
+                </div>
+            </div>
+
                 <span className="bg-indigo-600 text-white text-xs px-1 py-0.5 rounded-md w-fit">
                     {valuePreview}
                 </span>
-            </div>
+
         </div>
     );
 }

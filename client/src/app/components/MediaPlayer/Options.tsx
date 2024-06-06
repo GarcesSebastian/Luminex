@@ -83,22 +83,22 @@ export default function Options(props: any) {
         }
     }
 
-    useEffect(() => {
-        let timeoutMouseStop: NodeJS.Timeout | undefined;
+    // useEffect(() => {
+    //     let timeoutMouseStop: NodeJS.Timeout | undefined;
         
-        if (isMouseMoving) {
-            clearTimeout(timeoutMouseStop);
-            timeoutMouseStop = setTimeout(() => {
-                setIsMouseMoving(false);
-                if (props.isView) {
-                    props.setIsView(false);
-                }
-            }, 3000);
-        }
-        return () => {
-            clearTimeout(timeoutMouseStop);
-        };
-    }, [isMouseMoving, props.isView]);
+    //     if (isMouseMoving) {
+    //         clearTimeout(timeoutMouseStop);
+    //         timeoutMouseStop = setTimeout(() => {
+    //             setIsMouseMoving(false);
+    //             if (props.isView) {
+    //                 props.setIsView(false);
+    //             }
+    //         }, 3000);
+    //     }
+    //     return () => {
+    //         clearTimeout(timeoutMouseStop);
+    //     };
+    // }, [isMouseMoving, props.isView]);
 
     return(
         <div id="options-content" onMouseEnter={optionsMouseEnter} onMouseMove={optionsMouseMove} onMouseLeave={optionsMouseLeave} className="absolute flex flex-col top-0 left-0 w-full h-full rounded-md">
@@ -129,6 +129,8 @@ export default function Options(props: any) {
                         handlePlayVideo={props.handlePlayVideo}
                         value={props.value}
                         setValue={props.setValue}
+                        thumbnailFather={props.thumbnailFather}
+                        setThumbnailFather={props.setThumbnailFather}
                     />
                 </div>
 
