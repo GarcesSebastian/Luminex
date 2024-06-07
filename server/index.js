@@ -1,13 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
-const ffmpeg = require("fluent-ffmpeg");
+const ffmpeg = require('fluent-ffmpeg');
 const cors = require('cors');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+
+// Importar los binarios instalados
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffprobePath = require('@ffprobe-installer/ffprobe').path;
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -27,9 +29,6 @@ app.get("/", (req, res) => {
 
 const upload = multer({ dest: 'uploads/' });
 
-// Separar las iteraciones por longitudes de 100 (Resuelto)
-// Verificar porque los thumbnailsFather no aparecen despues de 50 segundos (Pendiente)
-
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
@@ -42,6 +41,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         const videoInfo = await new Promise((resolve, reject) => {
             ffmpeg.ffprobe(filePath, (err, metadata) => {
                 if (err) {
+                    console.error(`Error en ffprobe: ${err.message}`);
                     reject(err);
                 } else {
                     resolve(metadata);
@@ -51,9 +51,9 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         const combinedImages = [];
         const duration = videoInfo.format.duration;
         const thumbnailsCount = Math.ceil(duration);
-        const numInteractions = Math.ceil(thumbnailsCount / 100)
+        const numInteractions = Math.ceil(thumbnailsCount / 100);
 
-        for(let i = 0; i < numInteractions; i++) {
+        for (let i = 0; i < numInteractions; i++) {
             console.log(thumbnailsCount);
 
             await new Promise((resolve, reject) => {
@@ -78,11 +78,10 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                     });
             });
 
-
             const thumbnailFiles = fs.readdirSync(thumbnailsPath)
-            .filter(file => file.startsWith('th'))
-            .map(file => path.join(thumbnailsPath, file))
-            .sort();
+                .filter(file => file.startsWith('th'))
+                .map(file => path.join(thumbnailsPath, file))
+                .sort();
 
             for (let i = 0; i < thumbnailFiles.length; i += thumbnailsPerImage) {
                 const batch = thumbnailFiles.slice(i, i + thumbnailsPerImage);
@@ -102,15 +101,14 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                         background: { r: 0, g: 0, b: 0, alpha: 0 }
                     }
                 })
-                .composite(compositeImages)
-                .toFile(outputImagePath);
+                    .composite(compositeImages)
+                    .toFile(outputImagePath);
 
                 combinedImages.push(outputImagePath.replace(/\\/g, '/'));
                 console.log('Combined thumbnails image created:', outputImagePath);
             }
 
             thumbnailFiles.forEach(file => fs.unlinkSync(file));
-
         }
 
         return res.json({ message: "Thumbnails generated and combined successfully", images: combinedImages });
