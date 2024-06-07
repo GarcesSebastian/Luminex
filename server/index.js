@@ -27,6 +27,9 @@ app.get("/", (req, res) => {
     res.send("Hello World");
 });
 
+//reviasr https://community.fly.io/t/deploy-node-with-ffmpeg-cannot-find-ffprobe/14893/3
+//https://fluent-ffmpeg.github.io/
+
 const upload = multer({ dest: 'uploads/' });
 
 app.post("/upload", upload.single('file'), async (req, res) => {
