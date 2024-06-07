@@ -51,7 +51,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         const combinedImages = [];
         const duration = videoInfo.format.duration;
         const thumbnailsCount = Math.ceil(duration);
-        const numInteractions = Math.ceil(thumbnailsCount / 100)
+        const numInteractions = Math.ceil(thumbnailsCount / 100);
 
         for(let i = 0; i < numInteractions; i++) {
             console.log(thumbnailsCount);
@@ -77,7 +77,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                         filename: 'th%b.png'
                     });
             });
-
 
             const thumbnailFiles = fs.readdirSync(thumbnailsPath)
             .filter(file => file.startsWith('th'))
@@ -110,7 +109,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             }
 
             thumbnailFiles.forEach(file => fs.unlinkSync(file));
-
         }
 
         return res.json({ message: "Thumbnails generated and combined successfully", images: combinedImages });
