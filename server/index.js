@@ -27,11 +27,14 @@ app.get("/", (req, res) => {
 
 const upload = multer({ dest: 'uploads/' });
 
+// Separar las iteraciones por longitudes de 100
+// Verificar porque los thumbnailsFather no aparecen despues de 50 segundos
+
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
     const thumbnailsPath = 'thumbnails/';
-    const thumbnailSize = { width: 1100, height: 650 };
+    const thumbnailSize = { width: 150, height: 100 };
     const thumbnailsPerImage = 5 * 5;
     const gridSize = 5;
 
@@ -46,7 +49,9 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             });
         });
         const duration = videoInfo.format.duration;
-        const thumbnailsCount = Math.ceil(duration);
+        const thumbnailsCount = 1;
+
+        console.log(thumbnailsCount);
 
         await new Promise((resolve, reject) => {
             ffmpeg(filePath)
@@ -65,12 +70,12 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                     count: thumbnailsCount,
                     folder: thumbnailsPath,
                     size: `${thumbnailSize.width}x${thumbnailSize.height}`,
-                    filename: 'thumbnail-%b.png'
+                    filename: 'th%b.png'
                 });
         });
 
         const thumbnailFiles = fs.readdirSync(thumbnailsPath)
-            .filter(file => file.startsWith('thumbnail-'))
+            .filter(file => file.startsWith('th'))
             .map(file => path.join(thumbnailsPath, file))
             .sort();
 
@@ -83,7 +88,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                 left: (index % gridSize) * thumbnailSize.width
             }));
 
-            const outputImagePath = path.join(thumbnailsPath, `combined-thumbnails-${Math.floor(i / thumbnailsPerImage) + 1}.png`);
+            const outputImagePath = path.join(thumbnailsPath, `t-${Math.floor(i / thumbnailsPerImage) + 1}.png`);
 
             await sharp({
                 create: {

@@ -23,6 +23,10 @@ export default function MediaPlayer() {
     const [isView, setIsView] = useState<boolean>(false);
 
     useEffect(() => {
+        console.log(thumbnailFather);
+    }, [thumbnailFather])
+
+    useEffect(() => {
         const contentVideo = document.querySelector("#content-video");
         const contentFrameTest = document.querySelector("#content-frame-test");
 
@@ -83,7 +87,7 @@ export default function MediaPlayer() {
 
                 const lengthInterval = Math.ceil(duration / 25);
                 const intervals: { image: string, value: number }[] = Array.from({ length: lengthInterval }, (_, i) => ({ image: imagesResult[i], value: duration / 25 }));
-
+                
                 const contentVideo = document.querySelector("#content-video");
 
                 if (contentVideo) contentVideo.classList.remove("hidden");

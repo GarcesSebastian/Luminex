@@ -4,12 +4,12 @@ import * as Globals from '../../ts/globals'
 export default function Range(props: any) {
     const [valuePreview, setValuePreview] = useState("00:00");
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-    const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+    const [mouseClickPosition, setMouseClickPosition] = useState({ x: 0, y: 0 });
+    const [isChangingMousePosition, setIsChangingMousePosition] = useState(false);
     const rangeRef = useRef<HTMLInputElement>(null);
-    const previewRef = useRef<HTMLDivElement>(null);
-    const previewFrameRef = useRef<HTMLImageElement>(null);
     const previewCurrentRef = useRef<HTMLLegendElement>(null);
     const imageCurrentRef = useRef<HTMLDivElement>(null);
+    const previewCurrentTIme = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         props.setValue(props.currentTime);
@@ -20,43 +20,93 @@ export default function Range(props: any) {
             rangeProgress.style.width = `${progress}%`;
         }
 
+        if (props.currentTime >= props.duration) {
+            props.handlePlayVideo();
+        }
+    }, [props.currentTime]);
+
+    const handleChangeValue = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rect = e.target.getBoundingClientRect();
+        const rectWidth = rect.width;
+        const offsetX = mouseClickPosition.x;
+        const ratio = Number((offsetX / rectWidth).toFixed(2));
+        const newValue = ratio * props.duration;
+
+        (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
+        props.setValue(newValue);
+        props.setValue(props.currentTime);
+        
+        const rangeProgress = document.getElementById("range-progress");
+        if (rangeProgress) {
+            const progress = ((props.currentTime ?? 0) * 100) / props.duration;
+            rangeProgress.style.width = `${progress}%`;
+        }
+
         if (props.currentTime === props.duration) {
             props.handlePlayVideo();
         }
-
-    }, [props.currentTime, props.duration]);
-
-    const handleChangeValue = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = parseFloat(e.target.value);
-        (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
-        props.setValue(newValue);
     };
 
-    const handleMouseDown = () => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
         (document.querySelector("video") as HTMLVideoElement).pause();
+        setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+        setIsChangingMousePosition(true);
     };
 
     const handleMouseUp = () => {
+        setIsChangingMousePosition(false);
         if (!props.isPlaying) return;
         (document.querySelector("video") as HTMLVideoElement).play();
     };
 
     const handleMouseEnter = () => {
-        if (previewCurrentRef.current) {
+        if (previewCurrentRef.current && previewCurrentTIme.current) {
             previewCurrentRef.current.style.display = "initial";
+            previewCurrentTIme.current.style.display = "initial";
+        }
+    };
+    
+    const handleMouseOut = () => {
+        if (previewCurrentRef.current && previewCurrentTIme.current) {
+            previewCurrentRef.current.style.display = "none";
+            previewCurrentTIme.current.style.display = "none";
         }
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
-        if (!(e.nativeEvent.offsetX > 0)) return;
+        if (!(e.nativeEvent.offsetX > 0)) return;        
+
+        console.log(isChangingMousePosition);
+
+        if (isChangingMousePosition){
+            const rect = e.currentTarget.getBoundingClientRect();
+            const rectWidth = rect.width;
+            const offsetX = mouseClickPosition.x;
+            const ratio = Number((offsetX / rectWidth).toFixed(2));
+            const newValue = ratio * props.duration;
+    
+            (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
+            props.setValue(newValue);
+            props.setValue(props.currentTime);
+            
+            const rangeProgress = document.getElementById("range-progress");
+            if (rangeProgress) {
+                const progress = ((props.currentTime ?? 0) * 100) / props.duration;
+                rangeProgress.style.width = `${progress}%`;
+            }
+    
+            if (props.currentTime === props.duration) {
+                props.handlePlayVideo();
+            }
+        }
 
         const rect = e.currentTarget.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left - 75;
-        const offsetY = e.currentTarget.offsetTop - (document.querySelector("#preview-auto")?.clientHeight ?? 0) - 10;
+        const offsetX = e.clientX - rect.left - ((Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL) / 2 ?? 0) ;
+        const offsetY = e.currentTarget.offsetTop - ((Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL) ?? 0) - 10;
         const rangeWidth = rect.width;
         const ratio = e.nativeEvent.offsetX / rangeWidth;
-        const umbral = rangeWidth - (document.querySelector("#preview-auto")?.clientWidth ?? 0);
-        let newValuePreview: any = ratio * props.duration;
+        const umbral = rangeWidth - ((Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL) ?? 0);
+        let newValuePreview = ratio * props.duration;
 
         const minutes = Math.floor(newValuePreview / 60);
         const seconds = Math.floor(newValuePreview % 60);
@@ -65,6 +115,7 @@ export default function Range(props: any) {
         const formattedTime = `${formattedMinutes}:${formattedSeconds}`;
 
         setMousePosition({ x: offsetX > umbral ? umbral + 5 : offsetX < 0 ? -5 : offsetX , y: offsetY });
+        setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
         setValuePreview(formattedTime);
 
         const positionInterval = Math.ceil(newValuePreview / 25)
@@ -74,7 +125,7 @@ export default function Range(props: any) {
         }
 
         const valueThumbnailFather = Math.ceil(newValuePreview);
-        
+
         const umbralY = 5 * (positionInterval - 1);
         let rows = Math.ceil(valueThumbnailFather / 5 - umbralY) == 0 ? 1 : Math.ceil(valueThumbnailFather / 5 - umbralY);
         rows -= 1;
@@ -85,27 +136,12 @@ export default function Range(props: any) {
         const umbralX = (umbralY != 0 ? Math.pow(umbralY, 2) : 0) * (positionInterval - 1);
         const columns = Math.ceil(((valueThumbnailFather - umbralX) - Cl_R_Cl)) - 6;
 
-        console.log("rows: " + rows);
-        console.log("columns: " + columns);
-        console.log("umbralX: " + umbralX);
-        console.log("Cl: " + Cl);
-        console.log("Cl_R: " + Cl_R);
-        console.log("Cl_R_Cl: " + Cl_R_Cl);
-        console.log("valueThumbnailFather: " + valueThumbnailFather);
-
         const imagePositionX = columns * (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
         const imagePositionY = rows * (Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
 
-        setImagePosition({ x: -imagePositionX, y: -imagePositionY });
         if (imageCurrentRef.current) {
             imageCurrentRef.current.style.top = -imagePositionY + 'px';
             imageCurrentRef.current.style.left = -imagePositionX + 'px';
-        }
-    };
-
-    const handleMouseOut = () => {
-        if (previewCurrentRef.current) {
-            previewCurrentRef.current.style.display = "none";
         }
     };
 
@@ -131,14 +167,14 @@ export default function Range(props: any) {
             />
 
 
-            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y, left: mousePosition.x}} className='overflow-hidden absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
+            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-none absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
                 <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000/${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
 
-                <span className="bg-indigo-600 text-white text-xs px-1 py-0.5 rounded-md w-fit">
-                    {valuePreview}
-                </span>
+            <span ref={previewCurrentTIme} style={{top: mousePosition.y + Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL - 20, left: mousePosition.x - (previewCurrentTIme.current?.clientWidth ?? 0 ) / 2 + (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL / 2 )}} className="bg-indigo-600 absolute hidden text-white text-xs px-1 py-0.5 rounded-md w-fit">
+                {valuePreview}
+            </span>
 
         </div>
     );
