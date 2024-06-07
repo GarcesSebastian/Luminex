@@ -27,14 +27,14 @@ app.get("/", (req, res) => {
 
 const upload = multer({ dest: 'uploads/' });
 
-// Separar las iteraciones por longitudes de 100
-// Verificar porque los thumbnailsFather no aparecen despues de 50 segundos
+// Separar las iteraciones por longitudes de 100 (Resuelto)
+// Verificar porque los thumbnailsFather no aparecen despues de 50 segundos (Pendiente)
 
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
     const thumbnailsPath = 'thumbnails/';
-    const thumbnailSize = { width: 150, height: 100 };
+    const thumbnailSize = { width: 1100, height: 650 };
     const thumbnailsPerImage = 5 * 5;
     const gridSize = 5;
 
@@ -48,64 +48,70 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                 }
             });
         });
+        const combinedImages = [];
         const duration = videoInfo.format.duration;
-        const thumbnailsCount = 1;
+        const thumbnailsCount = Math.ceil(duration);
+        const numInteractions = Math.ceil(thumbnailsCount / 100)
 
-        console.log(thumbnailsCount);
+        for(let i = 0; i < numInteractions; i++) {
+            console.log(thumbnailsCount);
 
-        await new Promise((resolve, reject) => {
-            ffmpeg(filePath)
-                .on('filenames', (filenames) => {
-                    console.log('Generated thumbnails:', filenames);
-                })
-                .on('end', () => {
-                    console.log('Thumbnails generation complete');
-                    resolve();
-                })
-                .on('error', (err) => {
-                    console.error('Error generating thumbnails:', err);
-                    reject(err);
-                })
-                .screenshots({
-                    count: thumbnailsCount,
-                    folder: thumbnailsPath,
-                    size: `${thumbnailSize.width}x${thumbnailSize.height}`,
-                    filename: 'th%b.png'
-                });
-        });
+            await new Promise((resolve, reject) => {
+                console.log(i);
+                ffmpeg(filePath)
+                    .on('filenames', (filenames) => {
+                        console.log('Generated thumbnails:', filenames);
+                    })
+                    .on('end', () => {
+                        console.log('Thumbnails generation complete');
+                        resolve();
+                    })
+                    .on('error', (err) => {
+                        console.error('Error generating thumbnails:', err);
+                        reject(err);
+                    })
+                    .screenshots({
+                        count: (thumbnailsCount - (100 * (numInteractions - (numInteractions - i)))),
+                        folder: thumbnailsPath,
+                        size: `${thumbnailSize.width}x${thumbnailSize.height}`,
+                        filename: 'th%b.png'
+                    });
+            });
 
-        const thumbnailFiles = fs.readdirSync(thumbnailsPath)
+
+            const thumbnailFiles = fs.readdirSync(thumbnailsPath)
             .filter(file => file.startsWith('th'))
             .map(file => path.join(thumbnailsPath, file))
             .sort();
 
-        let combinedImages = [];
-        for (let i = 0; i < thumbnailFiles.length; i += thumbnailsPerImage) {
-            const batch = thumbnailFiles.slice(i, i + thumbnailsPerImage);
-            const compositeImages = batch.map((file, index) => ({
-                input: file,
-                top: Math.floor(index / gridSize) * thumbnailSize.height,
-                left: (index % gridSize) * thumbnailSize.width
-            }));
+            for (let i = 0; i < thumbnailFiles.length; i += thumbnailsPerImage) {
+                const batch = thumbnailFiles.slice(i, i + thumbnailsPerImage);
+                const compositeImages = batch.map((file, index) => ({
+                    input: file,
+                    top: Math.floor(index / gridSize) * thumbnailSize.height,
+                    left: (index % gridSize) * thumbnailSize.width
+                }));
 
-            const outputImagePath = path.join(thumbnailsPath, `t-${Math.floor(i / thumbnailsPerImage) + 1}.png`);
+                const outputImagePath = path.join(thumbnailsPath, `t-${Math.floor(i / thumbnailsPerImage) + 1}.png`);
 
-            await sharp({
-                create: {
-                    width: thumbnailSize.width * gridSize,
-                    height: thumbnailSize.height * gridSize,
-                    channels: 4,
-                    background: { r: 0, g: 0, b: 0, alpha: 0 }
-                }
-            })
-            .composite(compositeImages)
-            .toFile(outputImagePath);
+                await sharp({
+                    create: {
+                        width: thumbnailSize.width * gridSize,
+                        height: thumbnailSize.height * gridSize,
+                        channels: 4,
+                        background: { r: 0, g: 0, b: 0, alpha: 0 }
+                    }
+                })
+                .composite(compositeImages)
+                .toFile(outputImagePath);
 
-            combinedImages.push(outputImagePath.replace(/\\/g, '/'));
-            console.log('Combined thumbnails image created:', outputImagePath);
+                combinedImages.push(outputImagePath.replace(/\\/g, '/'));
+                console.log('Combined thumbnails image created:', outputImagePath);
+            }
+
+            thumbnailFiles.forEach(file => fs.unlinkSync(file));
+
         }
-
-        thumbnailFiles.forEach(file => fs.unlinkSync(file));
 
         return res.json({ message: "Thumbnails generated and combined successfully", images: combinedImages });
     } catch (error) {

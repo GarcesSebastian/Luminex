@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Options from './MediaPlayer/Options';
 import VideoPlayer from './MediaPlayer/VideoPlayer';
 import * as States from '../ts/States';
+import { ErrorAlert } from './Alerts/Error';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
@@ -21,10 +22,7 @@ export default function MediaPlayer() {
     const [value, setValue] = useState(currentTime);
     const [volume, setVolume] = useState(1);
     const [isView, setIsView] = useState<boolean>(false);
-
-    useEffect(() => {
-        console.log(thumbnailFather);
-    }, [thumbnailFather])
+    const [isError, setIsError] = useState<boolean>(false);
 
     useEffect(() => {
         const contentVideo = document.querySelector("#content-video");
@@ -69,6 +67,24 @@ export default function MediaPlayer() {
         }
 
     },[isView])
+
+    useEffect(() => {
+        const alertError = document.querySelector("#alertError") as HTMLElement;
+
+        if(isError){
+            alertError?.classList.replace("animate-deployment-invert", "animate-deployment");
+            alertError?.classList.replace("hidden", "flex");
+        }else{
+            alertError?.classList.replace("animate-deployment", "animate-deployment-invert");
+            alertError?.classList.replace("flex", "hidden");
+
+            return;
+        }
+
+        setTimeout(() => {
+            setIsError(false);
+        }, 2000);
+    }, [isError])
 
         
     const generateThumbnails = async (file: any, progressBar: any, duration: number): Promise<{ image: string, value: number }[] | undefined> => {
@@ -122,6 +138,13 @@ export default function MediaPlayer() {
     
         const file = e.target.files?.[0];
         if (file) {
+            const type = file.type.split("/")[0];
+
+            if(type != "video"){
+                setIsError(true);
+                return undefined;
+            }
+
             setIsCounting(true);
             const videoURL = URL.createObjectURL(file);
             setVideoSrc(videoURL);
@@ -220,13 +243,7 @@ export default function MediaPlayer() {
                 </div>
             )}
 
-            {videoSrc && (
-                <div className='w-fit h-fit flex flex-col gap-y-4 pt-4'>
-                    <div id="content-frame-test" className="flex-col relative top-0 flex gap-y-1 justify-center w-full max-w-2xl h-fit items-center p-1 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md">
-                        <img id="frameTest" src="https://placehold.co/150x100" className="w-full h-full object-cover rounded-md" />
-                    </div>
-                </div>
-            )}
+            <ErrorAlert message='El tipo de archivo no es compatible. :)' id="alertError" isError={isError} setIsError={setIsError}/>
 
             <div className="w-full max-w-2xl grid relative gap-5 mb-10">
                 <div className="w-full py-9 bg-gray-50 rounded-2xl border border-gray-300 border-dashed">

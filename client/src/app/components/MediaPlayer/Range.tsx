@@ -42,9 +42,6 @@ export default function Range(props: any) {
             rangeProgress.style.width = `${progress}%`;
         }
 
-        if (props.currentTime === props.duration) {
-            props.handlePlayVideo();
-        }
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
@@ -76,8 +73,6 @@ export default function Range(props: any) {
     const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
         if (!(e.nativeEvent.offsetX > 0)) return;        
 
-        console.log(isChangingMousePosition);
-
         if (isChangingMousePosition){
             const rect = e.currentTarget.getBoundingClientRect();
             const rectWidth = rect.width;
@@ -93,10 +88,6 @@ export default function Range(props: any) {
             if (rangeProgress) {
                 const progress = ((props.currentTime ?? 0) * 100) / props.duration;
                 rangeProgress.style.width = `${progress}%`;
-            }
-    
-            if (props.currentTime === props.duration) {
-                props.handlePlayVideo();
             }
         }
 
@@ -167,7 +158,7 @@ export default function Range(props: any) {
             />
 
 
-            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-none absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
+            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
                 <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000/${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
