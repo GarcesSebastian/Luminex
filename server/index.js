@@ -28,7 +28,7 @@ app.get("/", (req, res) => {
 
 const upload = multer({ dest: 'uploads/' });
 
-app.post("/upload2", upload.single('file'), async (req, res) => {
+app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
     const thumbnailsPath = path.join(__dirname, 'thumbnails');
@@ -38,6 +38,29 @@ app.post("/upload2", upload.single('file'), async (req, res) => {
     
     if (!fs.existsSync(thumbnailsPath)) {
         fs.mkdirSync(thumbnailsPath);
+    }
+
+    try{
+        fs.readdirSync(thumbnailsPath)
+        .filter(file => file.startsWith('output-'))
+        .map(file => path.join(thumbnailsPath, file))
+        .sort()
+        .forEach(file => {
+            fs.unlinkSync(file);
+            console.log("Deleted file: ", file);
+        });
+    
+        fs.readdirSync(thumbnailsPath)
+        .filter(file => file.startsWith('thumbnail-'))
+        .map(file => path.join(thumbnailsPath, file))
+        .sort()
+        .forEach(file => {
+            fs.unlinkSync(file);
+            console.log("Deleted file: ", file);
+        });
+    }catch(error){
+        console.log("Ha ocurrido un error. ", error);
+        return res.status(500).json({ error: 'Error processing request' });
     }
 
     try {
@@ -60,6 +83,9 @@ app.post("/upload2", upload.single('file'), async (req, res) => {
                         .seekInput(i)
                         .frames(1)
                         .output(outputPath)
+                        .on('start', () => {
+                            console.log(`Generating thumbnail for second ${i}...`);
+                        })
                         .on('end', () => {
                             imageCombination.push(outputPath.replace(/\\/g, '/'));
                             resolve(outputPath.replace(/\\/g, '/'));
@@ -75,20 +101,16 @@ app.post("/upload2", upload.single('file'), async (req, res) => {
 
         const thumbnails = await Promise.all(thumbnailPromises);
         
-        const cmd = `${ffmpegPathStatic} -i thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=150:100[tiled];[tiled]tile=5x5" thumbnails/output-%d.png`;
+        const cmd = `${ffmpegPathStatic} -i thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
             if(error){
                 console.log("Ha ocurrido un error. ", error);
                 return res.status(500).json({ error: 'Error processing request' });
             }
-
-            console.log("stdout: " + stdout);
-            console.log("stderr: " + stderr);
         })
-        .on('spawn', (e) => {
+        .on('spawn', () => {
             console.log("Generating thumbnails father...");
-            console.log(e);
             isGenerating = true;
         })
         .on('exit', () => {

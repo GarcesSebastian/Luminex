@@ -93,7 +93,7 @@ export default function MediaPlayer() {
         formData.append('duration', duration.toString());
 
         try {
-            const response = await fetch('http://localhost:4000/upload2', {
+            const response = await fetch('http://localhost:4000/upload', {
                 method: 'POST',
                 body: formData,
             });
