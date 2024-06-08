@@ -27,18 +27,25 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '5000mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '5000mb' }));
 
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});
+  
+
 const upload = multer({
     dest: '/tmp/uploads/',
     limits: {
       fileSize: 5000 * 1024 * 1024,
     },
-  });
+});
   
-
 app.use('/thumbnails', express.static('/tmp/thumbnails'));
 
 app.get("/", (req, res) => {
-    res.send("Hello World");
+
+    // return detected if cors is enabled in text
+    res.send("cors enabled: " + corsOptions.origin.join(', '));
 });
 
 app.post("/upload", upload.single('file'), async (req, res) => {
