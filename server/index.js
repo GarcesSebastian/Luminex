@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg.exe');
+const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
 console.log("Using ffmpeg from:", ffmpegPath);
 console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
@@ -21,7 +21,13 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '500mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
 
-const upload = multer({ dest: '/tmp/uploads/' });
+const upload = multer({
+    dest: '/tmp/uploads/',
+    limits: {
+      fileSize: 500 * 1024 * 1024,
+    },
+  });
+  
 
 app.use('/thumbnails', express.static('/tmp/thumbnails'));
 
