@@ -9,7 +9,8 @@ const fs = require('fs');
 const { exec } = require('child_process');
 
 // Importar los binarios instalados
-ffmpeg.setFfmpegPath(ffmpegPathStatic);
+const ffmpegPath = ffmpegPathStatic || '/var/task/node_modules/ffmpeg-static/ffmpeg';
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 const port = 4000;
@@ -90,7 +91,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         const thumbnails = await Promise.all(thumbnailPromises);
         
-        const cmd = `${ffmpegPathStatic} -i /tmp/thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" /tmp/thumbnails/output-%d.png`;
+        const cmd = `${ffmpegPath} -i /tmp/thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" /tmp/thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
