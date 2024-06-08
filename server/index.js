@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static');
+const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
 console.log("Using ffmpeg from:", ffmpegPath);
 console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
