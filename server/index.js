@@ -18,20 +18,18 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '500mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
 
-app.use('/thumbnails', express.static(path.join(__dirname, 'thumbnails')));
+const upload = multer({ dest: '/tmp/uploads/' });
+
+app.use('/thumbnails', express.static('/tmp/thumbnails'));
 
 app.get("/", (req, res) => {
     res.send("Hello World");
 });
 
-//https://fluent-ffmpeg.github.io/
-
-const upload = multer({ dest: 'uploads/' });
-
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
-    const thumbnailsPath = path.join(__dirname, 'thumbnails');
+    const thumbnailsPath = path.join('/tmp', 'thumbnails');
     const thumbnailsPathRelative = '/thumbnails';
     const imageCombination = [];
     let isGenerating = false;
@@ -40,32 +38,23 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         fs.mkdirSync(thumbnailsPath);
     }
 
-    try{
+    try {
+        // Borrar archivos existentes en thumbnailsPath
         fs.readdirSync(thumbnailsPath)
-        .filter(file => file.startsWith('output-'))
+        .filter(file => file.startsWith('output-') || file.startsWith('thumbnail-'))
         .map(file => path.join(thumbnailsPath, file))
-        .sort()
         .forEach(file => {
             fs.unlinkSync(file);
             console.log("Deleted file: ", file);
         });
-    
-        fs.readdirSync(thumbnailsPath)
-        .filter(file => file.startsWith('thumbnail-'))
-        .map(file => path.join(thumbnailsPath, file))
-        .sort()
-        .forEach(file => {
-            fs.unlinkSync(file);
-            console.log("Deleted file: ", file);
-        });
-    }catch(error){
+
+    } catch (error) {
         console.log("Ha ocurrido un error. ", error);
         return res.status(500).json({ error: 'Error processing request' });
     }
 
     try {
-
-        const duration =  Math.ceil(req.body.duration);
+        const duration = Math.ceil(req.body.duration);
         const intervalsDuration = Math.ceil(duration / 25);
         console.log('Video duration:', duration);
         console.log('Intervals duration:', intervalsDuration);
@@ -101,10 +90,10 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         const thumbnails = await Promise.all(thumbnailPromises);
         
-        const cmd = `${ffmpegPathStatic} -i thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" thumbnails/output-%d.png`;
+        const cmd = `${ffmpegPathStatic} -i /tmp/thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" /tmp/thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
-            if(error){
+            if (error) {
                 console.log("Ha ocurrido un error. ", error);
                 return res.status(500).json({ error: 'Error processing request' });
             }
@@ -114,7 +103,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             isGenerating = true;
         })
         .on('exit', () => {
-            if(!isGenerating){
+            if (!isGenerating) {
                 console.log("Error generating thumbnails");
                 return res.status(500).json({ error: 'Error processing request' });
             }
@@ -126,15 +115,15 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             .map(file => path.join(thumbnailsPath, file))
             .sort();
 
-            try{
+            try {
                 thumbnailFiles.forEach(file => fs.unlinkSync(file))
                 console.log("Thumbnails generated successfully");
-            }catch(error){
+            } catch (error) {
                 console.log("Ha ocurrido un error. ", error);
                 return res.status(500).json({ error: 'Error processing request' });
             }
 
-            for(let i = 1; i <= intervalsDuration; i++){
+            for (let i = 1; i <= intervalsDuration; i++) {
                 const outputImagePath = path.join(thumbnailsPathRelative, `output-${i}.png`);
                 thumbnailOutput.push(outputImagePath.replace(/\\/g, '/'));
             }
