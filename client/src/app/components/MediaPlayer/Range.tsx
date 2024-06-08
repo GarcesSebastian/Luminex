@@ -171,7 +171,7 @@ export default function Range(props: any) {
 
 
             <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
-                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
+                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('https://luminex-fullstack.vercel.app${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
 

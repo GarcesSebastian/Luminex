@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const ffmpegPath = ffmpegPathStatic;
+const ffmpegPath = path.join(__dirname, 'node_modules/ffmpeg-static/ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 console.log("Using ffmpeg from:", ffmpegPath);
 console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
@@ -68,6 +68,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         console.log("Using ffmpeg from:", ffmpegPath);
         console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
+        //dirname
         console.log("dirname:", __dirname);
 
         for (let i = 0; i < duration; i++) {
