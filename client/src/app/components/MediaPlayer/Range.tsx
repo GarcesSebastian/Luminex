@@ -119,21 +119,33 @@ export default function Range(props: any) {
 
         const umbralY = 5 * (positionInterval - 1);
         let rows = Math.ceil(valueThumbnailFather / 5 - umbralY) == 0 ? 1 : Math.ceil(valueThumbnailFather / 5 - umbralY);
-        rows -= 1;
 
         const Cl = Globals.DEFAULT_CEILING_THUMBNAIL;
         const Cl_R = Cl * rows;
         const Cl_R_Cl = Cl_R - Cl
-        const umbralX = (umbralY != 0 ? Math.pow(umbralY, 2) : 0) * (positionInterval - 1);
-        const columns = Math.ceil(((valueThumbnailFather - umbralX) - Cl_R_Cl)) - 6;
+        const umbralX = 25 * (positionInterval - 1);
+        const columns = Math.ceil(((valueThumbnailFather - umbralX) - Cl_R_Cl)) - 1;
+
+        console.log("PositionInterval: " + positionInterval);
+        console.log("ValueThumbnailFather: " + valueThumbnailFather);
+        console.log("test: " + (Math.ceil(valueThumbnailFather - umbralX) - 1));
+        
+        console.log("umbralY: " + umbralY);
+        console.log("Cl: " + Cl);
+        console.log("Cl_R: " + Cl_R);
+        console.log("Cl_R_Cl: " + Cl_R_Cl);
+        console.log("UmbralX: " + umbralX);
 
         const imagePositionX = columns * (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
-        const imagePositionY = rows * (Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
+        const imagePositionY = (rows - 1) * (Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
 
         if (imageCurrentRef.current) {
             imageCurrentRef.current.style.top = -imagePositionY + 'px';
             imageCurrentRef.current.style.left = -imagePositionX + 'px';
         }
+
+        console.log("Columns: " + columns, "Rows: " + rows);
+        
     };
 
     return (
@@ -159,7 +171,7 @@ export default function Range(props: any) {
 
 
             <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
-                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000/${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
+                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
 

@@ -2,17 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPathStatic = require('ffmpeg-static');
 const cors = require('cors');
-const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
 
 // Importar los binarios instalados
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+ffmpeg.setFfmpegPath(ffmpegPathStatic);
 
 const app = express();
 const port = 4000;
@@ -27,97 +24,109 @@ app.get("/", (req, res) => {
     res.send("Hello World");
 });
 
-//reviasr https://community.fly.io/t/deploy-node-with-ffmpeg-cannot-find-ffprobe/14893/3
 //https://fluent-ffmpeg.github.io/
 
 const upload = multer({ dest: 'uploads/' });
 
-app.post("/upload", upload.single('file'), async (req, res) => {
+app.post("/upload2", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
-    const thumbnailsPath = 'thumbnails/';
-    const thumbnailSize = { width: 1100, height: 650 };
-    const thumbnailsPerImage = 5 * 5;
-    const gridSize = 5;
+    const thumbnailsPath = path.join(__dirname, 'thumbnails');
+    const thumbnailsPathRelative = '/thumbnails';
+    const imageCombination = [];
+    let isGenerating = false;
+    
+    if (!fs.existsSync(thumbnailsPath)) {
+        fs.mkdirSync(thumbnailsPath);
+    }
 
     try {
-        const videoInfo = await new Promise((resolve, reject) => {
-            ffmpeg.ffprobe(filePath, (err, metadata) => {
-                if (err) {
-                    console.error(`Error en ffprobe: ${err.message}`);
-                    reject(err);
-                } else {
-                    resolve(metadata);
-                }
-            });
-        });
-        const combinedImages = [];
-        const duration = videoInfo.format.duration;
-        const thumbnailsCount = Math.ceil(duration);
-        const numInteractions = Math.ceil(thumbnailsCount / 100);
 
-        for (let i = 0; i < numInteractions; i++) {
-            console.log(thumbnailsCount);
+        const duration =  Math.ceil(req.body.duration);
+        const intervalsDuration = Math.ceil(duration / 25);
+        console.log('Video duration:', duration);
+        console.log('Intervals duration:', intervalsDuration);
 
-            await new Promise((resolve, reject) => {
-                console.log(i);
-                ffmpeg(filePath)
-                    .on('filenames', (filenames) => {
-                        console.log('Generated thumbnails:', filenames);
-                    })
-                    .on('end', () => {
-                        console.log('Thumbnails generation complete');
-                        resolve();
-                    })
-                    .on('error', (err) => {
-                        console.error('Error generating thumbnails:', err);
-                        reject(err);
-                    })
-                    .screenshots({
-                        count: (thumbnailsCount - (100 * (numInteractions - (numInteractions - i)))),
-                        folder: thumbnailsPath,
-                        size: `${thumbnailSize.width}x${thumbnailSize.height}`,
-                        filename: 'th%b.png'
-                    });
-            });
+        const thumbnailPromises = [];
+        const thumbnailOutput = [];
 
-            const thumbnailFiles = fs.readdirSync(thumbnailsPath)
-                .filter(file => file.startsWith('th'))
-                .map(file => path.join(thumbnailsPath, file))
-                .sort();
+        console.log("Generating thumbnails...");
 
-            for (let i = 0; i < thumbnailFiles.length; i += thumbnailsPerImage) {
-                const batch = thumbnailFiles.slice(i, i + thumbnailsPerImage);
-                const compositeImages = batch.map((file, index) => ({
-                    input: file,
-                    top: Math.floor(index / gridSize) * thumbnailSize.height,
-                    left: (index % gridSize) * thumbnailSize.width
-                }));
-
-                const outputImagePath = path.join(thumbnailsPath, `t-${Math.floor(i / thumbnailsPerImage) + 1}.png`);
-
-                await sharp({
-                    create: {
-                        width: thumbnailSize.width * gridSize,
-                        height: thumbnailSize.height * gridSize,
-                        channels: 4,
-                        background: { r: 0, g: 0, b: 0, alpha: 0 }
-                    }
+        for (let i = 0; i < duration; i++) {
+            const outputPath = path.join(thumbnailsPath, `thumbnail-${i}.png`);
+            thumbnailPromises.push(
+                new Promise((resolve, reject) => {
+                    ffmpeg(filePath)
+                        .seekInput(i)
+                        .frames(1)
+                        .output(outputPath)
+                        .on('end', () => {
+                            imageCombination.push(outputPath.replace(/\\/g, '/'));
+                            resolve(outputPath.replace(/\\/g, '/'));
+                        })
+                        .on('error', (err) => {
+                            console.error(`Error generating thumbnail for second ${i}:`, err.message);
+                            reject(err);
+                        })
+                        .run();
                 })
-                    .composite(compositeImages)
-                    .toFile(outputImagePath);
-
-                combinedImages.push(outputImagePath.replace(/\\/g, '/'));
-                console.log('Combined thumbnails image created:', outputImagePath);
-            }
-
-            thumbnailFiles.forEach(file => fs.unlinkSync(file));
+            );
         }
 
-        return res.json({ message: "Thumbnails generated and combined successfully", images: combinedImages });
+        const thumbnails = await Promise.all(thumbnailPromises);
+        
+        const cmd = `${ffmpegPathStatic} -i thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=150:100[tiled];[tiled]tile=5x5" thumbnails/output-%d.png`;
+
+        exec(cmd, (error, stdout, stderr) => {
+            if(error){
+                console.log("Ha ocurrido un error. ", error);
+                return res.status(500).json({ error: 'Error processing request' });
+            }
+
+            console.log("stdout: " + stdout);
+            console.log("stderr: " + stderr);
+        })
+        .on('spawn', (e) => {
+            console.log("Generating thumbnails father...");
+            console.log(e);
+            isGenerating = true;
+        })
+        .on('exit', () => {
+            if(!isGenerating){
+                console.log("Error generating thumbnails");
+                return res.status(500).json({ error: 'Error processing request' });
+            }
+
+            isGenerating = false;
+
+            const thumbnailFiles = fs.readdirSync(thumbnailsPath)
+            .filter(file => file.startsWith('thumbnail-'))
+            .map(file => path.join(thumbnailsPath, file))
+            .sort();
+
+            try{
+                thumbnailFiles.forEach(file => fs.unlinkSync(file))
+                console.log("Thumbnails generated successfully");
+            }catch(error){
+                console.log("Ha ocurrido un error. ", error);
+                return res.status(500).json({ error: 'Error processing request' });
+            }
+
+            for(let i = 1; i <= intervalsDuration; i++){
+                const outputImagePath = path.join(thumbnailsPathRelative, `output-${i}.png`);
+                thumbnailOutput.push(outputImagePath.replace(/\\/g, '/'));
+            }
+
+            return res.json({ message: "Thumbnails generated successfully", images: thumbnailOutput });
+        })
+        .on('error', (error) => {
+            console.log("Ha ocurrido un error. ", error);
+            return res.status(500).json({ error: 'Error processing request' });
+        });
+
     } catch (error) {
-        console.error('Error processing thumbnails:', error);
-        return res.status(500).json({ error: 'Error processing thumbnails' });
+        console.error('Error processing request:', error);
+        return res.status(500).json({ error: 'Error processing request' });
     }
 });
 

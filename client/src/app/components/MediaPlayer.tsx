@@ -90,9 +90,10 @@ export default function MediaPlayer() {
     const generateThumbnails = async (file: any, progressBar: any, duration: number): Promise<{ image: string, value: number }[] | undefined> => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('duration', duration.toString());
 
         try {
-            const response = await fetch('http://localhost:4000/upload', {
+            const response = await fetch('http://localhost:4000/upload2', {
                 method: 'POST',
                 body: formData,
             });
