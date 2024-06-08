@@ -17,7 +17,13 @@ console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
 const app = express();
 const port = 4000;
 
-app.use(cors());
+const corsOptions = {
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://luminex-fullstack-i5t5.vercel.app'],
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+};
+  
+app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '500mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
 
