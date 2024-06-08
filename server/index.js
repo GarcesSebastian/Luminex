@@ -24,13 +24,13 @@ const corsOptions = {
 };
   
 app.use(cors(corsOptions));
-app.use(bodyParser.json({ limit: '500mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
+app.use(bodyParser.json({ limit: '5000mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '5000mb' }));
 
 const upload = multer({
     dest: '/tmp/uploads/',
     limits: {
-      fileSize: 500 * 1024 * 1024,
+      fileSize: 5000 * 1024 * 1024,
     },
   });
   
