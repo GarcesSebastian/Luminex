@@ -66,6 +66,9 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         console.log("Generating thumbnails...");
 
+        console.log("Using ffmpeg from:", ffmpegPath);
+        console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
+
         for (let i = 0; i < duration; i++) {
             const outputPath = path.join(thumbnailsPath, `thumbnail-${i}.png`);
             thumbnailPromises.push(
