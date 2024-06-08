@@ -109,11 +109,6 @@ export default function MediaPlayer() {
 
                 if (contentVideo) contentVideo.classList.remove("hidden");
                 if (progressBar) progressBar.style.width = "100%";
-        
-                setIsUploading(false);
-                setPlaying(false);
-                setIsCounting(false);
-
                 return intervals;
             } else {
                 console.log('Failed to upload video file');
@@ -178,6 +173,10 @@ export default function MediaPlayer() {
                     resolve();
                 });
             });
+            
+            setIsUploading(false);
+            setPlaying(false);
+            setIsCounting(false);
         }
     };
     
