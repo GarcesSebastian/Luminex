@@ -8,6 +8,7 @@ export default function Range(props: any) {
     const [isChangingMousePosition, setIsChangingMousePosition] = useState(false);
     const rangeRef = useRef<HTMLInputElement>(null);
     const previewCurrentRef = useRef<HTMLLegendElement>(null);
+    const previewCurrentRefBg = useRef<HTMLDivElement>(null);
     const imageCurrentRef = useRef<HTMLDivElement>(null);
     const previewCurrentTIme = useRef<HTMLDivElement>(null);
 
@@ -57,16 +58,18 @@ export default function Range(props: any) {
     };
 
     const handleMouseEnter = () => {
-        if (previewCurrentRef.current && previewCurrentTIme.current) {
+        if (previewCurrentRef.current && previewCurrentTIme.current && previewCurrentRefBg.current) {
             previewCurrentRef.current.style.display = "initial";
             previewCurrentTIme.current.style.display = "initial";
+            previewCurrentRefBg.current.style.display = "initial";
         }
     };
     
     const handleMouseOut = () => {
-        if (previewCurrentRef.current && previewCurrentTIme.current) {
+        if (previewCurrentRef.current && previewCurrentTIme.current && previewCurrentRefBg.current) {
             previewCurrentRef.current.style.display = "none";
             previewCurrentTIme.current.style.display = "none";
+            previewCurrentRefBg.current.style.display = "none";
         }
     };
 
@@ -109,7 +112,7 @@ export default function Range(props: any) {
         setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
         setValuePreview(formattedTime);
 
-        const positionInterval = Math.ceil(newValuePreview / 25)
+        const positionInterval = Math.ceil(newValuePreview / (Globals.DEFAULT_CEILING_THUMBNAIL * Globals.DEFAULT_CEILING_THUMBNAIL))
         
         if(props.thumbnailFather != props.thumbnails[positionInterval - 1].image){
             props.setThumbnailFather(props.thumbnails[positionInterval - 1].image);
@@ -117,24 +120,14 @@ export default function Range(props: any) {
 
         const valueThumbnailFather = Math.ceil(newValuePreview);
 
-        const umbralY = 5 * (positionInterval - 1);
-        let rows = Math.ceil(valueThumbnailFather / 5 - umbralY) == 0 ? 1 : Math.ceil(valueThumbnailFather / 5 - umbralY);
+        const umbralY = (Globals.DEFAULT_CEILING_THUMBNAIL) * (positionInterval - 1);
+        let rows = Math.ceil(valueThumbnailFather / (Globals.DEFAULT_CEILING_THUMBNAIL) - umbralY) == 0 ? 1 : Math.ceil(valueThumbnailFather / (Globals.DEFAULT_CEILING_THUMBNAIL) - umbralY);
 
         const Cl = Globals.DEFAULT_CEILING_THUMBNAIL;
         const Cl_R = Cl * rows;
         const Cl_R_Cl = Cl_R - Cl
-        const umbralX = 25 * (positionInterval - 1);
+        const umbralX = (Globals.DEFAULT_CEILING_THUMBNAIL * Globals.DEFAULT_CEILING_THUMBNAIL) * (positionInterval - 1);
         const columns = Math.ceil(((valueThumbnailFather - umbralX) - Cl_R_Cl)) - 1;
-
-        console.log("PositionInterval: " + positionInterval);
-        console.log("ValueThumbnailFather: " + valueThumbnailFather);
-        console.log("test: " + (Math.ceil(valueThumbnailFather - umbralX) - 1));
-        
-        console.log("umbralY: " + umbralY);
-        console.log("Cl: " + Cl);
-        console.log("Cl_R: " + Cl_R);
-        console.log("Cl_R_Cl: " + Cl_R_Cl);
-        console.log("UmbralX: " + umbralX);
 
         const imagePositionX = columns * (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
         const imagePositionY = (rows - 1) * (Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL);
@@ -143,9 +136,6 @@ export default function Range(props: any) {
             imageCurrentRef.current.style.top = -imagePositionY + 'px';
             imageCurrentRef.current.style.left = -imagePositionX + 'px';
         }
-
-        console.log("Columns: " + columns, "Rows: " + rows);
-        
     };
 
     return (
@@ -170,8 +160,12 @@ export default function Range(props: any) {
             />
 
 
-            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md'>
-                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('https://luminex-fullstack.vercel.app${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
+            <div ref={previewCurrentRefBg} id="bg-preview-auto" className="z-0 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md absolute hidden" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL + 8, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL + 8, top: mousePosition.y - 29, left: mousePosition.x - 4}}>
+
+            </div>
+
+            <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute z-10'>
+                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
 

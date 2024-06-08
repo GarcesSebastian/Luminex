@@ -55,11 +55,15 @@ export default function Options(props: any) {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                     videoElement.style.width = '1200px';
+                    videoElement.style.height = "780px"
                 }
             } else {
                 if (videoContainer.requestFullscreen) {
                     videoContainer.requestFullscreen();
                     videoElement.style.width = '100%';
+                    videoElement.style.height = "100%"
+                    console.log("Full screen");
+                    
                 }
             }
         }

@@ -2,7 +2,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPathStatic = require('ffmpeg-static');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
@@ -10,59 +9,33 @@ const { exec } = require('child_process');
 
 const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg');
 ffmpeg.setFfmpegPath(ffmpegPath);
-console.log("Using ffmpeg from:", ffmpegPath);
-console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
-
 
 const app = express();
 const port = 4000;
-
-const corsOptions = {
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://luminex-fullstack-i5t5.vercel.app'],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
-};
   
-app.use(cors(corsOptions));
-app.use(bodyParser.json({ limit: '5000mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '5000mb' }));
-
-//cors
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', corsOptions.origin);
-    res.header('Access-Control-Allow-Methods', corsOptions.methods);
-    res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders);
-    next();
-});
+app.use(cors());
+app.use(bodyParser.json({ limit: '500mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
 });
-  
 
-const upload = multer({
-    dest: '/tmp/uploads/',
-    limits: {
-      fileSize: 5000 * 1024 * 1024,
-    },
-});
+const upload = multer({dest: 'uploads/'});
   
-app.use('/thumbnails', express.static('/tmp/thumbnails'));
+app.use('/thumbnails', express.static(path.join(__dirname, 'thumbnails')));
 
 app.get("/", (req, res) => {
-
-    // return detected if cors is enabled in text
-    res.send("cors enabled: " + corsOptions.origin.join(', '));
+    res.send("Hello World!");
 });
 
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
-    const thumbnailsPath = path.join('/tmp', 'thumbnails');
+    const thumbnailsPath = path.join('thumbnails');
     const thumbnailsPathRelative = '/thumbnails';
     const imageCombination = [];
-    let isGenerating = false;
 
     if (!fs.existsSync(thumbnailsPath)) {
         fs.mkdirSync(thumbnailsPath, { recursive: true });
@@ -93,38 +66,36 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         console.log("Generating thumbnails...");
 
-        console.log("Using ffmpeg from:", ffmpegPath);
-        console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
-        //dirname
-        console.log("dirname:", __dirname);
+        for(let i = 0; i < intervalsDuration; i++) {
+            for(let x = 0; x < 25; x++) {
+                const outputPath = path.join(thumbnailsPath, `thumbnail-${x + (25 * i)}.png`);
+                thumbnailPromises.push(
+                    new Promise((resolve, reject) => {
+                        ffmpeg(filePath)
+                            .seekInput(x + (25 * i))
+                            .frames(1)
+                            .output(outputPath)
+                            .on('start', () => {
+                                console.log(`Generating thumbnail for second ${x + (25 * i)}...`);
+                            })
+                            .on('end', () => {
+                                imageCombination.push(outputPath.replace(/\\/g, '/'));
+                                resolve(outputPath.replace(/\\/g, '/'));
+                            })
+                            .on('error', (err) => {
+                                console.error(`Error generating thumbnail for second ${x + (25 * i)}:`, err.message);
+                                reject(err);
+                            })
+                            .run();
+                    })
+                );
+            }
 
-        for (let i = 0; i < duration; i++) {
-            const outputPath = path.join(thumbnailsPath, `thumbnail-${i}.png`);
-            thumbnailPromises.push(
-                new Promise((resolve, reject) => {
-                    ffmpeg(filePath)
-                        .seekInput(i)
-                        .frames(1)
-                        .output(outputPath)
-                        .on('start', () => {
-                            console.log(`Generating thumbnail for second ${i}...`);
-                        })
-                        .on('end', () => {
-                            imageCombination.push(outputPath.replace(/\\/g, '/'));
-                            resolve(outputPath.replace(/\\/g, '/'));
-                        })
-                        .on('error', (err) => {
-                            console.error(`Error generating thumbnail for second ${i}:`, err.message);
-                            reject(err);
-                        })
-                        .run();
-                })
-            );
         }
 
         await Promise.all(thumbnailPromises);
 
-        const cmd = `${ffmpegPath} -i /tmp/thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" /tmp/thumbnails/output-%d.png`;
+        const cmd = `${ffmpegPath} -i thumbnails/thumbnail-%d.png -vf "scale=200:125, tile=5x5" thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
@@ -153,7 +124,10 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             }
 
             return res.json({ message: "Thumbnails generated successfully", images: thumbnailOutput });
-        });
+        })
+        .on('spawn', () => {
+            console.log('Generate Thumbnails Father');
+        })
 
     } catch (error) {
         console.error('Error processing request:', error);
