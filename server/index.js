@@ -27,6 +27,14 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '5000mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '5000mb' }));
 
+//cors
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', corsOptions.origin);
+    res.header('Access-Control-Allow-Methods', corsOptions.methods);
+    res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders);
+    next();
+});
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
