@@ -8,9 +8,10 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-// Importar los binarios instalados
 const ffmpegPath = ffmpegPathStatic || '/var/task/node_modules/ffmpeg-static/ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+console.log("Using ffmpeg from:", ffmpegPath);
 
 const app = express();
 const port = 4000;
@@ -34,23 +35,22 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const thumbnailsPathRelative = '/thumbnails';
     const imageCombination = [];
     let isGenerating = false;
-    
+
     if (!fs.existsSync(thumbnailsPath)) {
-        fs.mkdirSync(thumbnailsPath);
+        fs.mkdirSync(thumbnailsPath, { recursive: true });
     }
 
     try {
-        // Borrar archivos existentes en thumbnailsPath
         fs.readdirSync(thumbnailsPath)
-        .filter(file => file.startsWith('output-') || file.startsWith('thumbnail-'))
-        .map(file => path.join(thumbnailsPath, file))
-        .forEach(file => {
-            fs.unlinkSync(file);
-            console.log("Deleted file: ", file);
-        });
+            .filter(file => file.startsWith('output-') || file.startsWith('thumbnail-'))
+            .map(file => path.join(thumbnailsPath, file))
+            .forEach(file => {
+                fs.unlinkSync(file);
+                console.log("Deleted file: ", file);
+            });
 
     } catch (error) {
-        console.log("Ha ocurrido un error. ", error);
+        console.log("Error cleaning thumbnails directory: ", error);
         return res.status(500).json({ error: 'Error processing request' });
     }
 
@@ -89,38 +89,28 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             );
         }
 
-        const thumbnails = await Promise.all(thumbnailPromises);
-        
+        await Promise.all(thumbnailPromises);
+
         const cmd = `${ffmpegPath} -i /tmp/thumbnails/thumbnail-%d.png -filter_complex "[0:v]scale=200:125[tiled];[tiled]tile=5x5" /tmp/thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
-                console.log("Ha ocurrido un error. ", error);
-                return res.status(500).json({ error: 'Error processing request' });
-            }
-        })
-        .on('spawn', () => {
-            console.log("Generating thumbnails father...");
-            isGenerating = true;
-        })
-        .on('exit', () => {
-            if (!isGenerating) {
-                console.log("Error generating thumbnails");
+                console.log("Error generating combined thumbnails: ", error);
                 return res.status(500).json({ error: 'Error processing request' });
             }
 
-            isGenerating = false;
+            console.log("Combined thumbnails generated successfully");
 
             const thumbnailFiles = fs.readdirSync(thumbnailsPath)
-            .filter(file => file.startsWith('thumbnail-'))
-            .map(file => path.join(thumbnailsPath, file))
-            .sort();
+                .filter(file => file.startsWith('thumbnail-'))
+                .map(file => path.join(thumbnailsPath, file))
+                .sort();
 
             try {
-                thumbnailFiles.forEach(file => fs.unlinkSync(file))
-                console.log("Thumbnails generated successfully");
+                thumbnailFiles.forEach(file => fs.unlinkSync(file));
+                console.log("Thumbnails cleaned up successfully");
             } catch (error) {
-                console.log("Ha ocurrido un error. ", error);
+                console.log("Error cleaning up thumbnails: ", error);
                 return res.status(500).json({ error: 'Error processing request' });
             }
 
@@ -130,10 +120,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             }
 
             return res.json({ message: "Thumbnails generated successfully", images: thumbnailOutput });
-        })
-        .on('error', (error) => {
-            console.log("Ha ocurrido un error. ", error);
-            return res.status(500).json({ error: 'Error processing request' });
         });
 
     } catch (error) {
