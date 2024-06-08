@@ -10,8 +10,9 @@ const { exec } = require('child_process');
 
 const ffmpegPath = ffmpegPathStatic || '/var/task/node_modules/ffmpeg-static/ffmpeg';
 ffmpeg.setFfmpegPath(ffmpegPath);
-
 console.log("Using ffmpeg from:", ffmpegPath);
+console.log("ffmpeg exists:", fs.existsSync(ffmpegPath));
+
 
 const app = express();
 const port = 4000;

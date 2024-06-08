@@ -5,11 +5,9 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "nodemon ./index.js"
+        "start": "nodemon ./index.js",
+        "postinstall": "node -e \"require('ffmpeg-static'); console.log('ffmpeg-static installed successfully');\""
     },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
     "dependencies": {
         "body-parser": "^1.20.2",
         "child_process": "^1.0.2",
