@@ -121,7 +121,7 @@ export default function Options(props: any) {
                 </button>
 
                 <Settings/>
-                <QualityPopup/>
+                <QualityPopup qualities={props.qualities}/>
             </section>
 
             <footer className='w-full h-fit py-2 bg-black/50 bottom-0 px-2 gap-y-2 flex flex-col'>

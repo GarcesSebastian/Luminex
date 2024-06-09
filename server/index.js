@@ -1,13 +1,13 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const multer = require('multer');
-const ffmpeg = require('fluent-ffmpeg');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const { exec } = require('child_process');
+import express from 'express';
+import bodyParser from 'body-parser';
+import multer from 'multer';
+import ffmpeg from 'fluent-ffmpeg';
+import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { exec } from 'child_process';
 
-const ffmpegPath = path.join(__dirname, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe');
+const ffmpegPath = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const includeTmp = "";
@@ -28,7 +28,7 @@ app.use((err, req, res, next) => {
 
 const upload = multer({ dest: includeTmp + 'uploads/' });
 
-app.use('/thumbnails', express.static(path.join(__dirname, includeTmp + 'thumbnails')));
+app.use('/thumbnails', express.static(path.join('thumbnails')));
 
 app.get("/", (req, res) => {
     res.send("Hello World!");
@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
-    const thumbnailsPath = path.join(includeTmp + 'thumbnails');
+    const thumbnailsPath = path.join('thumbnails');
     const thumbnailsPathRelative = '/thumbnails';
     const imageCombination = [];
 
@@ -83,6 +83,49 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     }
 });
 
+app.post('/convert', upload.single('file'), async (req, res) => {
+    const file = req.file;
+
+    if (!file) {
+        return res.status(400).send('No file uploaded');
+    }
+
+    const inputPath = file.path;
+    const resolution = req.body.resolution;
+    const index = req.body.index;
+
+    let scaleFilter;
+    switch (resolution) {
+        case '1080p':
+            scaleFilter = 'scale=-2:1080';
+            break;
+        case '720p':
+            scaleFilter = 'scale=-2:720';
+            break;
+        case '480p':
+            scaleFilter = 'scale=-2:480';
+            break;
+        case '360p':
+            scaleFilter = 'scale=-2:360';
+            break;
+        default:
+            return res.status(400).send('Unsupported resolution');
+    }
+
+    const outputPath = path.join('uploads', `output-${index}.mp4`);
+
+    try {
+        await convertResolution(inputPath, outputPath, scaleFilter);
+        res.download(outputPath, 'output.mp4', (err) => {
+            if (err) console.error(err);
+            fs.unlinkSync(outputPath);
+        });
+    } catch (error) {
+        console.error('Error during conversion:', error.message);
+        res.status(500).json({ error: 'Error during conversion' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
 });
@@ -114,9 +157,8 @@ async function generateThumbnails(duration, thumbnailsPath, imageCombination, i,
 
     const some = await Promise.all(thumbnailPromises);
     
-    const listOutput = await mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelative, some, i);// this is list of thumbnails
+    const listOutput = await mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelative, some, i);
     thumbnailOutput.push(...listOutput);
-    
 }
 
 function mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelative, some, i) {
@@ -152,5 +194,28 @@ function mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelati
         }).on('spawn', () => {
             console.log('Generate Thumbnails Father');
         });
+    });
+}
+
+function convertResolution(inputPath, outputPath, scaleFilter){
+    return new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+            .outputOptions('-c:v', 'libx264')
+            .outputOptions('-crf', '23')
+            .outputOptions('-preset', 'veryfast')
+            .videoFilter(scaleFilter)
+            .output(outputPath)
+            .on('start', (commandLine) => {
+                console.log('Spawned Ffmpeg with command: ' + commandLine);
+            })
+            .on('end', () => {
+                console.log('Conversion finished');
+                resolve(outputPath);
+            })
+            .on('error', (err) => {
+                console.error('Error during conversion:', err.message);
+                reject(err);
+            })
+            .run();
     });
 }

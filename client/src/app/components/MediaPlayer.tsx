@@ -6,6 +6,7 @@ import VideoPlayer from './MediaPlayer/VideoPlayer';
 import * as States from '../ts/States';
 import { ErrorAlert } from './Alerts/Error';
 import { Loader } from './Loaders/Loader';
+import * as Functions from '../ts/Functions';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
@@ -23,6 +24,8 @@ export default function MediaPlayer() {
     const [volume, setVolume] = useState(1);
     const [isView, setIsView] = useState<boolean>(false);
     const [isError, setIsError] = useState<boolean>(false);
+    const [qualities, setQuality] = useState<any[]>([]);
+
 
     useEffect(() => {
         const contentVideo = document.querySelector("#content-video");
@@ -181,6 +184,17 @@ export default function MediaPlayer() {
             setIsCounting(false);
             document.querySelector("#preview-time-generate")?.classList.replace("hidden", "flex");
             document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
+
+            const qualities_range = ["1080p", "720p", "480p", "360p"]
+            qualities_range.forEach(async (qual, index) => {
+                const url_qual = await Functions.changeVideoResolution(file, qual, index);
+
+                if(!url_qual){
+                    return;
+                }
+
+                qualities.push({ range: qual, quality: url_qual });
+            })
         }
 
         setIsUploading(false);
@@ -265,6 +279,7 @@ export default function MediaPlayer() {
                             thumbnailFather={thumbnailFather}
                             setThumbnailFather={setThumbnailFather}
                             videoPlayer={videoElement}
+                            qualities={qualities}
                         />
                     </div>
                 </div>
@@ -279,7 +294,7 @@ export default function MediaPlayer() {
                         <div className="grid gap-2">
                             <div className="flex items-center justify-center">
                                 <label>
-                                <input type="file" onChange={handleFileChange} hidden />
+                                <input id="upload-video" type="file" onChange={handleFileChange} hidden />
                                     <div className="flex w-fit h-fit p-2 bg-indigo-600 hover:bg-indigo-700 transition-all duration-200 ease-in-out rounded-full shadow text-white items-center justify-center cursor-pointer">
                                         <svg className='w-10 h-10' viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <g id="File">

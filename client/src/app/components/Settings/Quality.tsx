@@ -13,7 +13,7 @@ export function Quality(data: Props){
             </span>
 
             <span className='w-fit h-full flex gap-x-2 text-sm font-semibold justify-center items-center'>
-                {data.quality} HD
+                {data.quality}
                 <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  className="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right w-6 h-6"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 6l6 6l-6 6" /></svg>
             </span>
         </button>
