@@ -22,9 +22,9 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-const upload = multer({dest: 'uploads/'});
+const upload = multer({dest: '/tmp/uploads/'});
   
-app.use('/thumbnails', express.static(path.join(__dirname, 'thumbnails')));
+app.use('/thumbnails', express.static(path.join(__dirname, '/tmp/thumbnails')));
 
 app.get("/", (req, res) => {
     res.send("Hello World!");
@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
-    const thumbnailsPath = path.join('thumbnails');
+    const thumbnailsPath = path.join('/tmp', 'thumbnails');
     const thumbnailsPathRelative = '/thumbnails';
     const imageCombination = [];
 
@@ -94,7 +94,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         await Promise.all(thumbnailPromises);
 
-        const cmd = `${ffmpegPath} -i thumbnails/thumbnail-%d.png -vf "scale=200:125, tile=5x5" thumbnails/output-%d.png`;
+        const cmd = `${ffmpegPath} -i /tmp/thumbnails/thumbnail-%d.png -vf "scale=200:125, tile=5x5" /tmp/thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
             if (error) {
