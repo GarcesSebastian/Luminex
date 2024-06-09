@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 
-const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg');
+const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
@@ -90,7 +90,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
                     })
                 );
             }
-
         }
 
         await Promise.all(thumbnailPromises);
