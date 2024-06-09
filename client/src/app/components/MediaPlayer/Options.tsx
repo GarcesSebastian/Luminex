@@ -114,7 +114,7 @@ export default function Options(props: any) {
                 <img src="/luminex/logo-best.jpeg" className="w-10 h-10 rounded-md"/>
             </header>
 
-            <section onClick={props.handlePlayVideo} className="w-full h-full relative flex justify-center items-center">
+            <section onClick={props.handlePlayVideo} className="w-full h-full relative flex justify-center items-center z-10 bg-red-500">
                 <button onClick={props.handlePlayVideo} id="btn-play-center" className='text-white px-3 py-2 hidden animate-showOpacity rounded-md cursor-pointer bg-indigo-600/70 transition-all duration-300 ease-out'>
                     <img id="image-player-play-center" src="/icons/player-pause.svg" className="w-14 h-14"/>
                 </button>

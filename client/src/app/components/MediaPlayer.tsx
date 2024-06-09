@@ -11,7 +11,7 @@ export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
     const [isPlaying, setPlaying] = useState(true);
     const [namePlayer, setNamePlayer] = useState("");
-    const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(document.querySelector("#videoPlayer") as HTMLVideoElement);
+    const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
     const [currentTime, setCurrentTime] = useState<number>();
     const [duration, setDuration] = useState<number>();
     const [thumbnails, setThumbnails] = useState<{ image: string, value: number }[] | undefined>([]);
@@ -190,7 +190,7 @@ export default function MediaPlayer() {
         document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
     };
     
-    const handlePlayVideo = () => {
+    const handlePlayVideo = (e: React.EventHandler<HTMLButtonElement>) => {
         if (!videoElement) {
             return;
         }
@@ -281,7 +281,7 @@ export default function MediaPlayer() {
 
             <div id="preview-time-generate" className="w-fit hidden mb-5 text-white font-bold">
                 <div className="w-fit h-fit p-1.5 bg-indigo-600 rounded-md">
-                    Time generate: {seconds}s
+                    Time generate: {(seconds / 1000)}s
                 </div>
             </div>  
         </div>
