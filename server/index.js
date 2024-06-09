@@ -10,7 +10,7 @@ const { exec } = require('child_process');
 const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-const includeTmp = "";
+const includeTmp = "/tmp/";
 const ceiling = 10;
 const ceilsAll = ceiling * ceiling;
 
