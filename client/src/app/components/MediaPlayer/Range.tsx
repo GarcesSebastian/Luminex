@@ -195,7 +195,7 @@ export default function Range(props: any) {
             />
 
 
-            <div ref={previewCurrentRefBg} id="bg-preview-auto" className="z-0 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md absolute hidden" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL + 8, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL + 8, top: mousePosition.y - 29, left: mousePosition.x - 4}}>
+            <div ref={previewCurrentRefBg} id="bg-preview-auto" className="z-10 bg-indigo-600 shadow-lg shadow-indigo-600 rounded-md absolute hidden" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL + 8, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL + 8, top: mousePosition.y - 29, left: mousePosition.x - 4}}>
 
             </div>
 
@@ -204,7 +204,7 @@ export default function Range(props: any) {
                 </div>
             </div>
 
-            <span ref={previewCurrentTIme} style={{top: mousePosition.y + Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL - 20, left: mousePosition.x - (previewCurrentTIme.current?.clientWidth ?? 0 ) / 2 + (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL / 2 )}} className="bg-indigo-600 absolute hidden text-white text-xs px-1 py-0.5 rounded-md w-fit">
+            <span ref={previewCurrentTIme} style={{top: mousePosition.y + Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL - 20, left: mousePosition.x - (previewCurrentTIme.current?.clientWidth ?? 0 ) / 2 + (Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL / 2 )}} className="bg-indigo-600 absolute hidden text-white text-xs px-1 py-0.5 rounded-md w-fit z-10">
                 {valuePreview}
             </span>
 

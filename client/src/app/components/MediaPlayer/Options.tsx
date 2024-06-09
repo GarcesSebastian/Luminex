@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Range from "./Range";
 import { Settings } from './Settings';
+import { QualityPopup } from '../Popups/QualityPopup';
 
 export default function Options(props: any) {
 
@@ -114,12 +115,13 @@ export default function Options(props: any) {
                 <img src="/luminex/logo-best.jpeg" className="w-10 h-10 rounded-md"/>
             </header>
 
-            <section onClick={props.handlePlayVideo} className="w-full h-full relative flex justify-center items-center z-10 bg-red-500">
+            <section id="section-select" onClick={props.handlePlayVideo} className="w-full h-full relative flex justify-center items-center z-10">
                 <button onClick={props.handlePlayVideo} id="btn-play-center" className='text-white px-3 py-2 hidden animate-showOpacity rounded-md cursor-pointer bg-indigo-600/70 transition-all duration-300 ease-out'>
                     <img id="image-player-play-center" src="/icons/player-pause.svg" className="w-14 h-14"/>
                 </button>
 
                 <Settings/>
+                <QualityPopup/>
             </section>
 
             <footer className='w-full h-fit py-2 bg-black/50 bottom-0 px-2 gap-y-2 flex flex-col'>

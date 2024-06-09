@@ -31,7 +31,7 @@ export default function MediaPlayer() {
         if (!isUploading) {
             if (contentFrameTest) contentFrameTest.classList.add("hidden");
             if (contentVideo) contentVideo.classList.remove("hidden");
-            handlePlayVideo();
+            handlePlayVideo(undefined);
         } else {
             if (contentFrameTest) contentFrameTest.classList.remove("hidden");
             if (contentVideo) contentVideo.classList.add("hidden");
@@ -190,7 +190,15 @@ export default function MediaPlayer() {
         document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
     };
     
-    const handlePlayVideo = (e: React.EventHandler<HTMLButtonElement>) => {
+    const handlePlayVideo = (e: React.MouseEvent<HTMLButtonElement> | undefined) => {
+
+        if(e){
+            const target = e.target as HTMLButtonElement;
+            if(target.id !== "section-select" && target.id !== "btn-play-center" && target.id !== "image-player-play-center"){
+                return;
+            }
+        }
+        
         if (!videoElement) {
             return;
         }
@@ -208,6 +216,14 @@ export default function MediaPlayer() {
             (document.querySelector("#btn-play-center") as HTMLImageElement).classList.replace("animate-hiddenOpacity", "animate-showOpacity");
             (document.querySelector("#btn-play-center") as HTMLImageElement).style.display = "flex"
 
+            setPlaying(false);
+        }
+
+        if (!isPlaying) {
+            videoElement.play();
+            setPlaying(true);
+        } else {
+            videoElement.pause();
             setPlaying(false);
         }
     };
