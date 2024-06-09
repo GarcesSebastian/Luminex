@@ -6,55 +6,62 @@ export default function Range(props: any) {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [mouseClickPosition, setMouseClickPosition] = useState({ x: 0, y: 0 });
     const [isChangingMousePosition, setIsChangingMousePosition] = useState(false);
+    const [progressTime, setProgress] = useState(0);
     const rangeRef = useRef<HTMLInputElement>(null);
     const previewCurrentRef = useRef<HTMLLegendElement>(null);
     const previewCurrentRefBg = useRef<HTMLDivElement>(null);
     const imageCurrentRef = useRef<HTMLDivElement>(null);
     const previewCurrentTIme = useRef<HTMLDivElement>(null);
 
+    const changeMousePosition = () => {
+        const rect = rangeRef.current?.getBoundingClientRect();
+        const offsetX = mouseClickPosition.x;
+        const rectWidth = rect?.width ?? 0;
+        const ratio = Number((offsetX / rectWidth).toFixed(2));
+        const newValue = ratio * props.duration;
+        const progress = ((newValue ?? 0) * 100) / props.duration;
+        setProgress(progress);
+
+        if (newValue < 0) {
+            props.videoPlayer.currentTime = 0;
+            return;
+        }
+
+        if (newValue > props.duration) {
+            props.videoPlayer.currentTime = props.duration;
+            return;
+        }
+
+        props.videoPlayer.currentTime = newValue;
+    }
+
     useEffect(() => {
         props.setValue(props.currentTime);
-
-        const rangeProgress = document.getElementById("range-progress");
-        if (rangeProgress) {
-            const progress = ((props.currentTime ?? 0) * 100) / props.duration;
-            rangeProgress.style.width = `${progress}%`;
-        }
+        const progress = ((props.currentTime ?? 0) * 100) / props.duration;
+        setProgress(progress);
 
         if (props.currentTime >= props.duration) {
             props.handlePlayVideo();
         }
     }, [props.currentTime]);
 
-    const handleChangeValue = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rect = e.target.getBoundingClientRect();
-        const rectWidth = rect.width;
-        const offsetX = mouseClickPosition.x;
-        const ratio = Number((offsetX / rectWidth).toFixed(2));
-        const newValue = ratio * props.duration;
-
-        (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
-        props.setValue(newValue);
-        props.setValue(props.currentTime);
-        
-        const rangeProgress = document.getElementById("range-progress");
-        if (rangeProgress) {
-            const progress = ((props.currentTime ?? 0) * 100) / props.duration;
-            rangeProgress.style.width = `${progress}%`;
+    useEffect(() => {
+        if (isChangingMousePosition) {
+            changeMousePosition();
         }
-
-    };
+    }, [isChangingMousePosition]);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
-        (document.querySelector("video") as HTMLVideoElement).pause();
+        (props.videoPlayer as HTMLVideoElement).pause();
         setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
         setIsChangingMousePosition(true);
+        changeMousePosition();
     };
 
     const handleMouseUp = () => {
         setIsChangingMousePosition(false);
         if (!props.isPlaying) return;
-        (document.querySelector("video") as HTMLVideoElement).play();
+        (props.videoPlayer as HTMLVideoElement).play();
     };
 
     const handleMouseEnter = () => {
@@ -73,27 +80,32 @@ export default function Range(props: any) {
         }
     };
 
+    const handleMousePressed = (e: React.MouseEvent<HTMLInputElement>) => {
+        if (!isChangingMousePosition) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const rangeWidth = rect.width;
+        const ratio = e.nativeEvent.offsetX / rangeWidth;
+        const newValuePreview = ratio * props.duration;
+        const progress = ((newValuePreview ?? 0) * 100) / props.duration;
+
+        if(progress < 0) {
+            setProgress(0);
+            props.videoPlayer.currentTime = 0;
+            return;
+        };
+        if(progress > 100) {
+            setProgress(100);
+            props.videoPlayer.currentTime = props.duration;
+            return;
+        };
+
+        setProgress(progress);
+        props.videoPlayer.currentTime = newValuePreview;
+    }
+
     const handleMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
         if (!(e.nativeEvent.offsetX > 0)) return;        
-
-        if (isChangingMousePosition){
-            const rect = e.currentTarget.getBoundingClientRect();
-            const rectWidth = rect.width;
-            const offsetX = mouseClickPosition.x;
-            const ratio = Number((offsetX / rectWidth).toFixed(2));
-            const newValue = ratio * props.duration;
-    
-            (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
-            props.setValue(newValue);
-            props.setValue(props.currentTime);
-            
-            const rangeProgress = document.getElementById("range-progress");
-            if (rangeProgress) {
-                const progress = ((props.currentTime ?? 0) * 100) / props.duration;
-                rangeProgress.style.width = `${progress}%`;
-            }
-        }
-
         const rect = e.currentTarget.getBoundingClientRect();
         const offsetX = e.clientX - rect.left - ((Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL) / 2 ?? 0) ;
         const offsetY = e.currentTarget.offsetTop - ((Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL) ?? 0) - 10;
@@ -110,7 +122,25 @@ export default function Range(props: any) {
 
         setMousePosition({ x: offsetX > umbral ? umbral + 5 : offsetX < 0 ? -5 : offsetX , y: offsetY });
         setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
-        setValuePreview(formattedTime);
+        console.log(newValuePreview, props.duration);
+        
+        if(newValuePreview > 0 && newValuePreview < props.duration){
+            setValuePreview(formattedTime);
+        }else if(newValuePreview >= props.duration){
+            setValuePreview(() => {
+                const minutes = Math.floor(props.duration / 60);
+                const seconds = Math.floor(props.duration % 60);
+                const formattedMinutes = minutes.toString().padStart(2, "0");
+                const formattedSeconds = seconds.toString().padStart(2, "0");
+                const formattedTime = `${formattedMinutes}:${formattedSeconds}`;
+
+                return formattedTime;
+            });
+            return;
+        }else if(newValuePreview <= 0){
+            setValuePreview("00:00");
+            return;
+        }
 
         const positionInterval = Math.ceil(newValuePreview / (Globals.DEFAULT_CEILING_THUMBNAIL * Globals.DEFAULT_CEILING_THUMBNAIL))
         
@@ -138,10 +168,16 @@ export default function Range(props: any) {
         }
     };
 
+    const handleMouseMoveGeneral = (e: React.MouseEvent<HTMLInputElement>) => {
+        handleMousePressed(e);
+        handleMouseMove(e);
+    }
+
     return (
-        <div className="w-full h-2 relative bg-red-500">
+        <div className="content-range w-full h-1 relative bg-red-500 flex justify-start items-center transition-all duration-200 ease-out">
             <span id="range-duration" className="w-full bg-gray-300 h-full absolute  cursor-pointer z-50"></span>
-            <span id="range-progress" className="bg-indigo-600 h-full absolute  cursor-pointer transition-all duration-0 z-50"></span>
+            <span id="range-progress" style={{width: progressTime + "%"}} className=" bg-indigo-600 h-full absolute cursor-pointer transition-all duration-0 z-50"></span>
+            <span id="range-circle-inner" style={{left: progressTime + "%"}} className="bg-indigo-600 w-0 h-0 -translate-x-1 duration-200 ease-out rounded-full absolute z-50"></span>
 
             <input
                 ref={rangeRef}
@@ -151,10 +187,9 @@ export default function Range(props: any) {
                 value={props.value}
                 min={0}
                 max={props.duration}
-                onChange={handleChangeValue}
                 onMouseDown={handleMouseDown}
                 onMouseUp={handleMouseUp}
-                onMouseMove={handleMouseMove}
+                onMouseMove={handleMouseMoveGeneral}
                 onMouseEnter={handleMouseEnter}
                 onMouseOut={handleMouseOut}
             />
@@ -165,7 +200,7 @@ export default function Range(props: any) {
             </div>
 
             <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute z-10'>
-                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('https://luminex-fullstack.vercel.app${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
+                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Range from "./Range";
+import { Settings } from './Settings';
 
 export default function Options(props: any) {
 
@@ -18,13 +19,13 @@ export default function Options(props: any) {
     
     const handleForward = () => {
         const newValue = (props.currentTime ?? 0) + 10 > props.duration ? props.duration : (props.currentTime ?? 0) + 10;
-        (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
+        (props.videoPlayer as HTMLVideoElement).currentTime = newValue;
         props.setValue(newValue);
     }
     
     const handleBackward = () => {
         const newValue = (props.currentTime ?? 0) - 10 < 0 ? 0 : (props.currentTime ?? 0) - 10;
-        (document.querySelector("video") as HTMLVideoElement).currentTime = newValue;
+        (props.videoPlayer as HTMLVideoElement).currentTime = newValue;
         props.setValue(newValue);
     }
 
@@ -47,7 +48,7 @@ export default function Options(props: any) {
     }
 
     const handleFullScreen = () => {
-        const videoElement = document.querySelector("video");
+        const videoElement = props.videoPlayer;
         if (videoElement) {
             const videoContainer = document.querySelector('#content-video') as any;
             if (document.fullscreenElement) {
@@ -117,6 +118,8 @@ export default function Options(props: any) {
                 <button onClick={props.handlePlayVideo} id="btn-play-center" className='text-white px-3 py-2 hidden animate-showOpacity rounded-md cursor-pointer bg-indigo-600/70 transition-all duration-300 ease-out'>
                     <img id="image-player-play-center" src="/icons/player-pause.svg" className="w-14 h-14"/>
                 </button>
+
+                <Settings/>
             </section>
 
             <footer className='w-full h-fit py-2 bg-black/50 bottom-0 px-2 gap-y-2 flex flex-col'>
@@ -180,6 +183,14 @@ export default function Options(props: any) {
                     </div>
 
                     <div className="w-fit h-fit flex gap-x-3 px-2">
+                        <button className='text-white p-1.5 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
+                            <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  className="icon icon-tabler icons-tabler-outline icon-tabler-settings w-6 h-6">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+                                <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                            </svg>
+                        </button>
+
                         <button onClick={handleFullScreen} className='text-white p-1.5 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
                             <svg className="icon icon-tabler icons-tabler-outline icon-tabler-maximize w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>

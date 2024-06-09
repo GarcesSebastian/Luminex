@@ -19,7 +19,7 @@ export default function VideoPlayer(props: any) {
     };
 
     return(
-        <video ref={videoRef} key={props.videoSrc} className='w-[1280px] h-[780px] rounded-md shadow-md overflow-hidden'>
+        <video id="videoPlayer" ref={videoRef} key={props.videoSrc} className='w-[1280px] h-[780px] rounded-md shadow-md overflow-hidden'>
             <source src={props.videoSrc} type="video/mp4" />
             Su navegador no soporta la etiqueta de vídeo.
         </video>

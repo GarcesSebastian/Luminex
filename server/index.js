@@ -10,6 +10,10 @@ const { exec } = require('child_process');
 const ffmpegPath = path.join(__dirname, 'node_modules' , 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+const includeTmp = "";
+const ceiling = 10;
+const ceilsAll = ceiling * ceiling;
+
 const app = express();
 const port = 4000;
   
@@ -22,9 +26,9 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-const upload = multer({dest: '/tmp/uploads/'});
+const upload = multer({dest: includeTmp +'uploads/'});
   
-app.use('/thumbnails', express.static(path.join(__dirname, '/tmp/thumbnails')));
+app.use('/thumbnails', express.static(path.join(__dirname, includeTmp +'thumbnails')));
 
 app.get("/", (req, res) => {
     res.send("Hello World!");
@@ -33,7 +37,7 @@ app.get("/", (req, res) => {
 app.post("/upload", upload.single('file'), async (req, res) => {
     const file = req.file;
     const filePath = file.path;
-    const thumbnailsPath = path.join('/tmp', 'thumbnails');
+    const thumbnailsPath = path.join( includeTmp + 'thumbnails');
     const thumbnailsPathRelative = '/thumbnails';
     const imageCombination = [];
 
@@ -57,7 +61,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
     try {
         const duration = Math.ceil(req.body.duration);
-        const intervalsDuration = Math.ceil(duration / 25);
+        const intervalsDuration = Math.ceil(duration / ceilsAll);
         console.log('Video duration:', duration);
         console.log('Intervals duration:', intervalsDuration);
 
@@ -65,25 +69,26 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         const thumbnailOutput = [];
 
         console.log("Generating thumbnails...");
+        console.log((duration < ceilsAll ? duration : ceilsAll));
 
         for(let i = 0; i < intervalsDuration; i++) {
-            for(let x = 0; x < 25; x++) {
-                const outputPath = path.join(thumbnailsPath, `thumbnail-${x + (25 * i)}.png`);
+            for(let x = 0; x < (duration < ceilsAll ? duration : ceilsAll); x++) {
+                const outputPath = path.join(thumbnailsPath, `thumbnail-${x + (ceilsAll * i)}.png`);
                 thumbnailPromises.push(
                     new Promise((resolve, reject) => {
                         ffmpeg(filePath)
-                            .seekInput(x + (25 * i))
+                            .seekInput(x + (ceilsAll * i))
                             .frames(1)
                             .output(outputPath)
                             .on('start', () => {
-                                console.log(`Generating thumbnail for second ${x + (25 * i)}...`);
+                                console.log(`Generating thumbnail for second ${x + (ceilsAll * i)}...`);
                             })
                             .on('end', () => {
                                 imageCombination.push(outputPath.replace(/\\/g, '/'));
                                 resolve(outputPath.replace(/\\/g, '/'));
                             })
                             .on('error', (err) => {
-                                console.error(`Error generating thumbnail for second ${x + (25 * i)}:`, err.message);
+                                console.error(`Error generating thumbnail for second ${x + (ceilsAll * i)}:`, err.message);
                                 reject(err);
                             })
                             .run();
@@ -94,7 +99,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
 
         await Promise.all(thumbnailPromises);
 
-        const cmd = `${ffmpegPath} -i /tmp/thumbnails/thumbnail-%d.png -vf "scale=200:125, tile=5x5" /tmp/thumbnails/output-%d.png`;
+        const cmd = `${ffmpegPath} -i ${includeTmp}thumbnails/thumbnail-%d.png -vf "scale=175:100, tile=${ceiling}x${ceiling}" ${includeTmp}thumbnails/output-%d.png`;
 
         exec(cmd, (error, stdout, stderr) => {
             if (error) {

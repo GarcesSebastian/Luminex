@@ -95,3 +95,16 @@ input[type="range"]::-webkit-slider-thumb {
   opacity: .8;
 border-radius: 1.5px;
 }
+
+#range-circle-inner{
+  transition-property: width, height;
+}
+
+.content-range:hover{
+  height: 0.375rem;
+
+  & #range-circle-inner{
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
