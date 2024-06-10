@@ -21,19 +21,22 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const port = 4000;
 
-const corsOptions = {
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'client-id']
-};
 
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(bodyParser.json({ limit: '3000mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '3000mb' }));
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
+});
+
+app.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
 });
 
 const upload = multer({ dest: includeTmp + 'uploads/' });
