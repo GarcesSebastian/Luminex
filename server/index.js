@@ -26,6 +26,7 @@ app.use(cors({
     origin: '*',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'client-id']
+    
 }));
 
 app.use(bodyParser.json({ limit: '3000mb' }));
