@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 const ffmpegPath = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-const includeTmp = "/tmp/";
+const includeTmp = "";
 const ceiling = 11;
 const ceilsAll = ceiling * ceiling;
 
@@ -26,7 +26,6 @@ app.use(cors({
     origin: '*',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'client-id']
-    
 }));
 
 app.use(bodyParser.json({ limit: '3000mb' }));
