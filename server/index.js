@@ -21,7 +21,13 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const port = 4000;
 
-app.use(cors());
+const corsOptions = {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'client-id']
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '3000mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '3000mb' }));
 
