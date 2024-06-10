@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 const ffmpegPath = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-const includeTmp = "/tmp/";
+const includeTmp = "";
 const ceiling = 11;
 const ceilsAll = ceiling * ceiling;
 
@@ -20,7 +20,6 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const port = 4000;
-
 
 app.use(cors({
     origin: '*',
