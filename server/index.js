@@ -37,14 +37,15 @@ app.use((err, req, res, next) => {
 });
 
 const upload = multer({ dest: includeTmp + 'uploads/' });
+const clients = new Map();
 
 app.use('/thumbnails', express.static(path.join('thumbnails')));
 
 app.get("/", (req, res) => {
-    res.send("Hello World!");
+    res.send({
+        message: "Hello World!"
+    });
 });
-
-const clients = new Map();
 
 wss.on('connection', function connection(ws) {
     ws.on('message', function incoming(message) {
