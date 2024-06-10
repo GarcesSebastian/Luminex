@@ -46,7 +46,8 @@ app.use('/thumbnails', express.static(path.join('thumbnails')));
 
 app.get("/", (req, res) => {
     res.send({
-        message: "Hello World!"
+        message: "Hello World!",
+        clients: clients
     });
 });
 
