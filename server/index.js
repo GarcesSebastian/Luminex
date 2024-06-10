@@ -21,7 +21,6 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const port = 4000;
 
-
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST'],
