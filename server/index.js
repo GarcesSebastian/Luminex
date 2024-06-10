@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 const ffmpegPath = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-const includeTmp = "";
+const includeTmp = "/tmp/";
 const ceiling = 11;
 const ceilsAll = ceiling * ceiling;
 
