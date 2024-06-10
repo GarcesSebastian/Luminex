@@ -1,54 +1,52 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-interface Props{
+interface SettingsProps{
     qualities: string[]
+    quality_selected: string,
+    setQuality_selected: (value: string) => void
+    isPlaying: boolean
 }
 
-export function QualityPopup(data: Props) {
+export function QualityPopup({isPlaying, qualities, quality_selected, setQuality_selected}: SettingsProps) {
+    useEffect(() => {
+        const src: any = qualities.find((qual: any) => qual.range === quality_selected);
+        const video = document.querySelector("#videoPlayer") as HTMLVideoElement;
+        const current_time = video.currentTime;
 
-    const [quality_selected, setQuality_selected] = useState<string>("720p");
+        if(!src) return;
+
+        video.src = src.quality;
+        video.load();
+        if(isPlaying) {
+            video.play();
+        }else{
+            video.pause();
+        }
+        video.currentTime = current_time;
+    },[quality_selected])
 
     const handleBackQuality = () => {
         document.querySelector("#q-settings-video")?.classList.replace("flex", "hidden");
         document.querySelector("#settings-video")?.classList.replace("hidden", "flex");
     }
 
-    const handleChangeQuality = async () => {
-        const qualitys = document.querySelectorAll(".q") as NodeListOf<HTMLButtonElement>;
+    const handleChangeQuality = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        const buttonClosest = (e.target as HTMLElement).closest('button');
+        
+        if (buttonClosest) {
+            (document.querySelectorAll(".q") as NodeListOf<HTMLButtonElement>).forEach((q: HTMLButtonElement) => {
+                q.querySelector("svg")?.classList.add("opacity-0");
+            });
 
-        qualitys.forEach((quality: HTMLButtonElement) => {
-            if (quality) {
-                quality.addEventListener("click", () => {
-                    qualitys.forEach((q: HTMLButtonElement) => {
-                        q.querySelector("svg")?.classList.add("opacity-0");
-                    });
-                    quality.querySelector("svg")?.classList.remove("opacity-0");
-                    const quality_select = quality.querySelector("p")?.textContent;
+            buttonClosest.querySelector("svg")?.classList.remove("opacity-0");
+            const quality_select = buttonClosest.querySelector("p")?.textContent;
 
-                    if (quality_select && data.qualities) {
-
-                        console.log(quality_select, quality_selected, quality_select == quality_selected);
-                        
-                        if (quality_select == quality_selected){
-                            return;
-                        }
-
-                        const src: any = data.qualities.find((qual: any) => qual.range === quality_select);
-                        const video = document.querySelector("#videoPlayer") as HTMLVideoElement;
-                        const current_time = video.currentTime;
-
-                        video.src = src.quality;
-                        video.load();
-                        video.play();
-                        video.currentTime = current_time;
-                        setQuality_selected(quality_select);
-                    }
-                });
+            if(quality_select != quality_selected){
+                setQuality_selected(quality_select as string);
             }
-        });
-
-    }
-
+        }
+    };
+    
     return(
         <div id="q-settings-video" className='w-[20rem] absolute bottom-2 right-4 h-fit bg-indigo-700 rounded-[3px] hidden flex-col justify-center items-center text-indigo-100 z-[90]'>
             <div className='w-full h-fit flex justify-start px-5 py-3 items-center bg-indigo-800 border-b-[0.125rem] border-indigo-700'>
@@ -76,11 +74,6 @@ export function QualityPopup(data: Props) {
             <button id="q-360" type="button" onClick={handleChangeQuality} className='q w-full h-fit flex justify-start px-5 py-3 items-center bg-indigo-800 hover:bg-indigo-500/30 cursor-pointer'>
                 <svg className="icon icon-tabler icons-tabler-outline icon-tabler-check w-6 h-6 opacity-0 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="1.5"  stroke-linecap="round"  stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
                 <p className='text-sm'>360p</p>
-            </button>
-            
-            <button id="q-auto" type="button" onClick={handleChangeQuality} className='q w-full h-fit flex justify-start px-5 py-3 items-center bg-indigo-800 hover:bg-indigo-500/30 cursor-pointer'>
-                <svg className="icon icon-tabler icons-tabler-outline icon-tabler-check w-6 h-6 opacity-0 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="1.5"  stroke-linecap="round"  stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
-                <p className='text-sm'>Automatico</p>
             </button>
         </div>
     )

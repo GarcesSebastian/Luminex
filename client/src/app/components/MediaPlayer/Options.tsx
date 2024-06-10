@@ -4,9 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Range from "./Range";
 import { Settings } from './Settings';
 import { QualityPopup } from '../Popups/QualityPopup';
+import { SpeedPopup } from '../Popups/SpeedPopup';
 
 export default function Options(props: any) {
 
+    const [quality_selected, setQuality_selected] = useState<string>("1080p");
+    const [speed_selected, setSpeed_selected] = useState<string>("Normal");
     let intervalMouseEnter: NodeJS.Timeout;
 
     function formattedSeconds(seconds: number){
@@ -105,6 +108,28 @@ export default function Options(props: any) {
     //     };
     // }, [isMouseMoving, props.isView]);
 
+    const handleShowSettings = () => {
+        const settings = document.querySelector("#settings-video") as HTMLElement;
+        const q_settings = document.querySelector("#q-settings-video") as HTMLElement;
+        const s_settings = document.querySelector("#s-settings-video") as HTMLElement;
+
+        if (settings.classList.contains("hidden")) {
+            settings.classList.replace("hidden", "flex");
+        } else {
+            settings.classList.replace("flex", "hidden");
+        }
+
+        if (!q_settings.classList.contains("hidden")) {
+            q_settings.classList.replace("flex", "hidden");
+            settings.classList.replace("flex", "hidden");
+        }
+
+        if (!s_settings.classList.contains("hidden")) {
+            s_settings.classList.replace("flex", "hidden");
+            settings.classList.replace("flex", "hidden");
+        }
+    }
+
     return(
         <div id="options-content" onMouseEnter={optionsMouseEnter} onMouseMove={optionsMouseMove} onMouseLeave={optionsMouseLeave} className="absolute flex flex-col top-0 left-0 w-full h-full rounded-md">
             <header className='text-white text-lg bg-black/50 px-3 w-full h-fit py-2 flex justify-between items-center'>
@@ -120,8 +145,14 @@ export default function Options(props: any) {
                     <img id="image-player-play-center" src="/icons/player-pause.svg" className="w-14 h-14"/>
                 </button>
 
-                <Settings/>
-                <QualityPopup qualities={props.qualities}/>
+                <Settings 
+                    quality_selected={quality_selected} 
+                    setQuality_selected={setQuality_selected} 
+                    speed_selected={speed_selected}
+                    setSpeed_selected={setSpeed_selected}
+                    />
+                <QualityPopup qualities={props.qualities} quality_selected={quality_selected} setQuality_selected={setQuality_selected} isPlaying={props.isPlaying}/>
+                <SpeedPopup speed_selected={speed_selected} setSpeed_selected={setSpeed_selected}/>
             </section>
 
             <footer className='w-full h-fit py-2 bg-black/50 bottom-0 px-2 gap-y-2 flex flex-col'>
@@ -185,7 +216,7 @@ export default function Options(props: any) {
                     </div>
 
                     <div className="w-fit h-fit flex gap-x-3 px-2">
-                        <button className='text-white p-1.5 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
+                        <button onClick={handleShowSettings} className='text-white p-1.5 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
                             <svg  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  className="icon icon-tabler icons-tabler-outline icon-tabler-settings w-6 h-6">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />

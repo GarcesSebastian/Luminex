@@ -1,7 +1,7 @@
 interface Props{
     id: string,
     quality: string,
-    handleQuality: (e: any) => void
+    handleQuality: (e: any) => void,
 }
 
 export function Quality(data: Props){

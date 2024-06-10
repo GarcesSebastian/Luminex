@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 interface Props{
     id: string,
@@ -16,25 +16,57 @@ export function Loader(data: Props){
         document.querySelector("#content-loader")?.classList.replace("hidden", "flex");
     },[data.isLoading])
 
-    return(
-        <div id="content-loader" className="absolute hidden w-full h-full justify-center items-center">
-            <div id="wifi-loader" className="flex">
-                <svg className="circle-outer" viewBox="0 0 86 86">
-                    <circle className="back" cx="43" cy="43" r="40"></circle>
-                    <circle className="front" cx="43" cy="43" r="40"></circle>
-                    <circle className="new" cx="43" cy="43" r="40"></circle>
-                </svg>
-                <svg className="circle-middle" viewBox="0 0 60 60">
-                    <circle className="back" cx="30" cy="30" r="27"></circle>
-                    <circle className="front" cx="30" cy="30" r="27"></circle>
-                </svg>
-                <svg className="circle-inner" viewBox="0 0 34 34">
-                    <circle className="back" cx="17" cy="17" r="14"></circle>
-                    <circle className="front" cx="17" cy="17" r="14"></circle>
-                </svg>
+    const [stateLoader, setStateLoader] = useState<string>("Generate..");
 
-                <div className="text mt-4" data-text="Generate.."></div>
+    useEffect(() => {
+        const socket = new WebSocket('ws://localhost:4000');
+
+        const clientId = generateUniqueId();
+
+        document.cookie = `clientId=${clientId}`;
+
+        socket.onopen = async function(event) {
+            socket.send(JSON.stringify({ type: 'clientId', id: clientId }));
+        };
+        
+        socket.onmessage = function(event: MessageEvent) {
+            let message: any;
+            try{
+                message = JSON.parse(event.data);
+            }catch(error){
+                console.error('Error al parsear el mensaje');
+            }
+
+            if(message){
+                setStateLoader(message.message);
+            }
+        };
+          
+        socket.onclose = function(event) {
+          console.log('Conexión cerrada con el servidor WebSocket');
+        };
+        
+        socket.onerror = function(error) {
+          console.error('Error en la conexión WebSocket:', error);
+        };
+    }, []);
+
+    function generateUniqueId() {
+        return Math.random().toString(36).substring(2) + Date.now().toString(36);
+    }
+
+    return(
+        <div id="content-loader" className="absolute hidden flex-col w-full h-full justify-center items-center">
+            <div className="cssload-container">
+                <ul className="cssload-flex-container">
+                    <li>
+                        <span className="cssload-loading cssload-one"></span>
+                        <span className="cssload-loading cssload-two"></span>
+                        <span className="cssload-loading-center bg-indigo-700"></span>
+                    </li>
+                </ul>
             </div>
+            <p className="text-indigo-500 -mt-5 text-lg font-semibold">{stateLoader}</p>
         </div>
     )
 }

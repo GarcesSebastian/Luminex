@@ -26,6 +26,16 @@ export default function MediaPlayer() {
     const [isError, setIsError] = useState<boolean>(false);
     const [qualities, setQuality] = useState<any[]>([]);
 
+    function getCookieValue(cookieName: string) {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(cookieName + '=')) {
+                return cookie.substring(cookieName.length + 1);
+            }
+        }
+        return null;
+    }
 
     useEffect(() => {
         const contentVideo = document.querySelector("#content-video");
@@ -98,6 +108,9 @@ export default function MediaPlayer() {
         try {
             const response = await fetch('http://localhost:4000/upload', {
                 method: 'POST',
+                headers: {
+                    'client-id': getCookieValue('clientId') || 'unknown',
+                },
                 body: formData,
             });
 
@@ -108,10 +121,6 @@ export default function MediaPlayer() {
                 const lengthInterval = Math.ceil(duration / 25);
                 const intervals: { image: string, value: number }[] = Array.from({ length: lengthInterval }, (_, i) => ({ image: imagesResult[i], value: duration / 25 }));
                 
-                const contentVideo = document.querySelector("#content-video");
-
-                if (contentVideo) contentVideo.classList.remove("hidden");
-                if (progressBar) progressBar.style.width = "100%";
                 return intervals;
             } else {
                 console.log('Failed to upload video file');
@@ -178,23 +187,30 @@ export default function MediaPlayer() {
                     resolve();
                 });
             });
-            
-            setIsUploading(false);
-            setPlaying(false);
-            setIsCounting(false);
-            document.querySelector("#preview-time-generate")?.classList.replace("hidden", "flex");
-            document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
 
-            const qualities_range = ["1080p", "720p", "480p", "360p"]
-            qualities_range.forEach(async (qual, index) => {
-                const url_qual = await Functions.changeVideoResolution(file, qual, index);
+            const qualities_range: any = ["360p", "480p", "720p", "1080p"]
+            qualities.splice(0, qualities.length);
+
+            for (const [index, qual] of qualities_range.entries()) {
+                const url_qual = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
 
                 if(!url_qual){
                     return;
                 }
 
                 qualities.push({ range: qual, quality: url_qual });
-            })
+            }
+            
+            const contentVideo = document.querySelector("#content-video");
+
+            if (contentVideo) contentVideo.classList.remove("hidden");
+            if (progressBar) progressBar.style.width = "100%";
+
+            setIsUploading(false);
+            setPlaying(false);
+            setIsCounting(false);
+            document.querySelector("#preview-time-generate")?.classList.replace("hidden", "flex");
+            document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
         }
 
         setIsUploading(false);

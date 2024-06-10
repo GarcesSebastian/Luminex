@@ -1,196 +1,189 @@
-#wifi-loader {
-    --background: #62abff;
-    --front-color: #4f29f0;
-    --back-color: #c3c8de;
-    --text-color: #414856;
-    width: 64px;
-    height: 64px;
-    border-radius: 50px;
-    position: relative;
-    justify-content: center;
-    align-items: center;
+.cssload-container * {
+  box-sizing: border-box;
+}
+
+.cssload-container {
+  margin: 38px auto 0 auto;
+  max-width: 1048px;
+}
+
+.cssload-container ul li {
+  list-style: none;
+}
+
+.cssload-flex-container {
+  display: flex;
+  display: -o-flex;
+  display: -ms-flex;
+  display: -webkit-flex;
+  display: -moz-flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.cssload-flex-container li {
+  padding: 19px;
+  height: 188px;
+  width: 188px;
+  margin: 56px 38px;
+  position: relative;
+  text-align: center;
+}
+
+.cssload-loading-center {
+  display: inline-block;
+  position: absolute;
+    /* The color can be custmized, This color is for center cube.*/
+  height: 56px;
+  width: 56px;
+  left: 68px;
+  top: 69px;
+  transform: rotate(45deg);
+  border-radius: 6px;
+  animation: pulse 1.3s ease infinite;
+}
+
+.cssload-loading {
+  display: inline-block;
+  position: relative;
+  width: 141px;
+  height: 141px;
+  margin-top: 6px;
+  transform: rotate(45deg);
+}
+
+.cssload-loading:after, .cssload-loading:before {
+  position: absolute;
+  content: '';
+  height: 19px;
+  width: 19px;
+  display: block;
+  top: 0;
+    /* The color can be custmized, This color is for 4 cubes.*/
+  background: rgb(99 102 241);
+  border-radius: 6px;
+}
+
+.cssload-loading:after {
+  right: 0;
+  animation: square-tr 2.6s ease infinite;
+  animation-delay: .162.5s;
+}
+
+.cssload-loading:before {
+  animation: square-tl 2.6s ease infinite;
+  animation-delay: .162.5s;
+}
+
+.cssload-loading.cssload-two {
+  position: relative;
+  top: -150px;
+}
+
+.cssload-loading.cssload-two:after, .cssload-loading.cssload-two:before {
+  bottom: 0;
+  top: initial;
+}
+
+.cssload-loading.cssload-two:after {
+  animation: square-br 2.6s ease infinite;
+  animation-direction: reverse;
+}
+
+.cssload-loading.cssload-two:before {
+  animation: square-bl 2.6s ease infinite;
+  animation-direction: reverse;
+}
+
+@keyframes square-tl {
+  0% {
+    transform: translate(0, 0);
   }
-  
-  #wifi-loader svg {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+
+  25% {
+    transform: translate(0, 117.5px);
   }
-  
-  #wifi-loader svg circle {
-    position: absolute;
-    fill: none;
-    stroke-width: 6px;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    transform: rotate(-100deg);
-    transform-origin: center;
+
+  50% {
+    transform: translate(117.5px, 117.5px);
   }
-  
-  #wifi-loader svg circle.back {
-    stroke: var(--back-color);
+
+  75% {
+    transform: translate(117.5px, 0);
   }
-  
-  #wifi-loader svg circle.front {
-    stroke: var(--front-color);
+}
+
+@keyframes square-bl {
+  0% {
+    transform: translate(0, 0);
   }
-  
-  #wifi-loader svg.circle-outer {
-    height: 86px;
-    width: 86px;
+
+  25% {
+    transform: translate(0, -117.5px);
   }
-  
-  #wifi-loader svg.circle-outer circle {
-    stroke-dasharray: 62.75 188.25;
+
+  50% {
+    transform: translate(117.5px, -117.5px);
   }
-  
-  #wifi-loader svg.circle-outer circle.back {
-    animation: circle-outer135 1.8s ease infinite 0.3s;
+
+  75% {
+    transform: translate(117.5px, 0);
   }
-  
-  #wifi-loader svg.circle-outer circle.front {
-    animation: circle-outer135 1.8s ease infinite 0.15s;
+}
+
+@keyframes square-tr {
+  0% {
+    transform: translate(0, 0);
   }
-  
-  #wifi-loader svg.circle-middle {
-    height: 60px;
-    width: 60px;
+
+  25% {
+    transform: translate(-117.5px, 0);
   }
-  
-  #wifi-loader svg.circle-middle circle {
-    stroke-dasharray: 42.5 127.5;
+
+  50% {
+    transform: translate(-117.5px, 117.5px);
   }
-  
-  #wifi-loader svg.circle-middle circle.back {
-    animation: circle-middle6123 1.8s ease infinite 0.25s;
+
+  75% {
+    transform: translate(0, 117.5px);
   }
-  
-  #wifi-loader svg.circle-middle circle.front {
-    animation: circle-middle6123 1.8s ease infinite 0.1s;
+}
+
+@keyframes square-br {
+  0% {
+    transform: translate(0, 0);
   }
-  
-  #wifi-loader svg.circle-inner {
-    height: 34px;
-    width: 34px;
+
+  25% {
+    transform: translate(-117.5px, 0);
   }
-  
-  #wifi-loader svg.circle-inner circle {
-    stroke-dasharray: 22 66;
+
+  50% {
+    transform: translate(-117.5px, -117.5px);
   }
-  
-  #wifi-loader svg.circle-inner circle.back {
-    animation: circle-inner162 1.8s ease infinite 0.2s;
+
+  75% {
+    transform: translate(0, -117.5px);
   }
-  
-  #wifi-loader svg.circle-inner circle.front {
-    animation: circle-inner162 1.8s ease infinite 0.05s;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
   }
-  
-  #wifi-loader .text {
-    position: absolute;
-    bottom: -40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-transform: lowercase;
-    font-weight: 500;
-    font-size: 14px;
-    letter-spacing: 0.2px;
-    width: fit-content;
+
+  to {
+    transform: rotate(360deg);
   }
-  
-  #wifi-loader .text::before, #wifi-loader .text::after {
-    content: attr(data-text);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(inherit) rotate(45deg);
   }
-  
-  #wifi-loader .text::before {
-    color: var(--text-color);
+
+  75% {
+    transform: scale(0.25) rotate(45deg);
   }
-  
-  #wifi-loader .text::after {
-    color: var(--front-color);
-    animation: text-animation76 3.6s ease infinite;
-    position: absolute;
-    left: 0;
-  }
-  
-  @keyframes circle-outer135 {
-    0% {
-      stroke-dashoffset: 25;
-    }
-  
-    25% {
-      stroke-dashoffset: 0;
-    }
-  
-    65% {
-      stroke-dashoffset: 301;
-    }
-  
-    80% {
-      stroke-dashoffset: 276;
-    }
-  
-    100% {
-      stroke-dashoffset: 276;
-    }
-  }
-  
-  @keyframes circle-middle6123 {
-    0% {
-      stroke-dashoffset: 17;
-    }
-  
-    25% {
-      stroke-dashoffset: 0;
-    }
-  
-    65% {
-      stroke-dashoffset: 204;
-    }
-  
-    80% {
-      stroke-dashoffset: 187;
-    }
-  
-    100% {
-      stroke-dashoffset: 187;
-    }
-  }
-  
-  @keyframes circle-inner162 {
-    0% {
-      stroke-dashoffset: 9;
-    }
-  
-    25% {
-      stroke-dashoffset: 0;
-    }
-  
-    65% {
-      stroke-dashoffset: 106;
-    }
-  
-    80% {
-      stroke-dashoffset: 97;
-    }
-  
-    100% {
-      stroke-dashoffset: 97;
-    }
-  }
-  
-  @keyframes text-animation76 {
-    0% {
-      clip-path: inset(0 100% 0 0);
-    }
-  
-    50% {
-      clip-path: inset(0);
-    }
-  
-    100% {
-      clip-path: inset(0 0 0 100%);
-    }
 }

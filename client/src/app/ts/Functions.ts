@@ -1,4 +1,4 @@
-export async function changeVideoResolution(videoFile: any, resolution: any, index: number){
+export async function changeVideoResolution(videoFile: any, resolution: any, index: number, clientId: string){
     if (videoFile) {
         const formData = new FormData();
         formData.append('file', videoFile);
@@ -8,6 +8,9 @@ export async function changeVideoResolution(videoFile: any, resolution: any, ind
         try {
             const response = await fetch('http://localhost:4000/convert', {
                 method: 'POST',
+                headers: {
+                    'client-id': clientId,
+                },
                 body: formData
             });
     

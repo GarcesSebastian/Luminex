@@ -6,6 +6,8 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 
 const ffmpegPath = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -15,6 +17,8 @@ const ceiling = 11;
 const ceilsAll = ceiling * ceiling;
 
 const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
 const port = 4000;
 
 app.use(cors());
@@ -34,7 +38,43 @@ app.get("/", (req, res) => {
     res.send("Hello World!");
 });
 
+const clients = new Map();
+
+wss.on('connection', function connection(ws) {
+    ws.on('message', function incoming(message) {
+        const data = JSON.parse(message);
+        if (data.type === 'clientId') {
+            clients.set(data.id, ws);
+            console.log('Identificador de cliente recibido:', data.id);
+        }
+    });
+
+    ws.send('¡Conexión establecida con el servidor!');
+
+    ws.on('close', function() {
+        clients.forEach((client, clientId) => {
+            if (client === ws) {
+                clients.delete(clientId);
+                console.log('Instancia de cliente eliminada:', clientId);
+            }
+        });
+    });
+});
+
+//send message all clients
+// clients.forEach((client, clientId) => {
+//     client.send('Mensaje para todos los clientes');
+// });
+
 app.post("/upload", upload.single('file'), async (req, res) => {
+    const clientId = req.headers['client-id'];
+
+    let client = null;
+
+    if (clients.has(clientId)) {
+        client = clients.get(clientId);
+    }
+
     const file = req.file;
     const filePath = file.path;
     const thumbnailsPath = path.join('thumbnails');
@@ -51,7 +91,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
             .map(file => path.join(thumbnailsPath, file))
             .forEach(file => {
                 fs.unlinkSync(file);
-                console.log("Deleted file: ", file);
             });
 
     } catch (error) {
@@ -68,13 +107,17 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         const thumbnailPromises = [];
         let thumbnailOutput = [];
 
-        console.log("Generating thumbnails...");
+        client.send(JSON.stringify({ message: 'Generating thumbnails...' }));
 
         for (let i = 0; i < intervalsDuration; i++) {
-            await generateThumbnails(duration, thumbnailsPath, imageCombination, i, thumbnailPromises, filePath, thumbnailOutput, intervalsDuration, thumbnailsPathRelative);
+            await generateThumbnails(duration, thumbnailsPath, imageCombination, i, thumbnailPromises, filePath, thumbnailOutput, intervalsDuration, thumbnailsPathRelative, client);
         }
 
-        console.log("thumbnailOutput", thumbnailOutput);
+        const files = fs.readdirSync(includeTmp + 'uploads/');
+        for (const file of files) {
+            fs.unlinkSync(path.join(includeTmp + 'uploads/', file));
+        }
+        client.send(JSON.stringify({ message: 'Thumbnails generated successfully'}));
         return res.json({ message: "Thumbnails generated successfully", images: thumbnailOutput });
 
     } catch (error) {
@@ -88,6 +131,14 @@ app.post('/convert', upload.single('file'), async (req, res) => {
 
     if (!file) {
         return res.status(400).send('No file uploaded');
+    }
+
+    const clientId = req.headers['client-id'];
+
+    let client = null;
+
+    if (clients.has(clientId)) {
+        client = clients.get(clientId);
     }
 
     const inputPath = file.path;
@@ -114,23 +165,34 @@ app.post('/convert', upload.single('file'), async (req, res) => {
 
     const outputPath = path.join('uploads', `output-${index}.mp4`);
 
+    client.send(JSON.stringify({ message: 'Conversion started in quality ' + resolution + '...'}));
+
     try {
-        await convertResolution(inputPath, outputPath, scaleFilter);
+        await convertResolution(inputPath, outputPath, scaleFilter, client);
+
         res.download(outputPath, 'output.mp4', (err) => {
-            if (err) console.error(err);
-            fs.unlinkSync(outputPath);
-        });
+            if (err) {
+                console.error('Error during download:', err);
+                return res.status(500).send('Error during download');
+            }
+
+            fs.unlink(outputPath, (err) => {
+                if (err) console.error('Error deleting output file:', err);
+            });
+        })
     } catch (error) {
         console.error('Error during conversion:', error.message);
         res.status(500).json({ error: 'Error during conversion' });
     }
+
+    client.send(JSON.stringify({ message: 'Conversion finished'}));
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
 });
 
-async function generateThumbnails(duration, thumbnailsPath, imageCombination, i, thumbnailPromises, filePath, thumbnailOutput, intervalsDuration, thumbnailsPathRelative) {
+async function generateThumbnails(duration, thumbnailsPath, imageCombination, i, thumbnailPromises, filePath, thumbnailOutput, intervalsDuration, thumbnailsPathRelative, client) {
     for (let x = 0; x < ((duration - (ceilsAll * i)) < ceilsAll ? (duration - (ceilsAll * i)) : ceilsAll); x++) {
         const outputPath = path.join(thumbnailsPath, `thumbnail-${x}.png`);
         thumbnailPromises.push(
@@ -140,7 +202,7 @@ async function generateThumbnails(duration, thumbnailsPath, imageCombination, i,
                     .frames(1)
                     .output(outputPath)
                     .on('start', () => {
-                        console.log(`Generating thumbnail for second ${x}...`);
+                        client.send(JSON.stringify({ message: `Generating thumbnail for second ${x}...` }));
                     })
                     .on('end', () => {
                         imageCombination.push(outputPath.replace(/\\/g, '/'));
@@ -155,13 +217,13 @@ async function generateThumbnails(duration, thumbnailsPath, imageCombination, i,
         );
     }
 
-    const some = await Promise.all(thumbnailPromises);
+    await Promise.all(thumbnailPromises);
     
-    const listOutput = await mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelative, some, i);
+    const listOutput = await mergeThumbnails(thumbnailsPath, thumbnailsPathRelative, i);
     thumbnailOutput.push(...listOutput);
 }
 
-function mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelative, some, i) {
+function mergeThumbnails(thumbnailsPath, thumbnailsPathRelative, i) {
     return new Promise((resolve, reject) => {
         const thumbnailOutputTest = [];
         const cmd = `${ffmpegPath} -i ${includeTmp}thumbnails/thumbnail-%d.png -vf "scale=175:100, tile=${ceiling}x${ceiling}" ${includeTmp}thumbnails/output-${i + 1}.png`;
@@ -172,8 +234,6 @@ function mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelati
                 return reject(error);
             }
 
-            console.log("Combined thumbnails generated successfully");
-
             const thumbnailFiles = fs.readdirSync(thumbnailsPath)
                 .filter(file => file.startsWith('thumbnail-'))
                 .map(file => path.join(thumbnailsPath, file))
@@ -181,7 +241,6 @@ function mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelati
 
             try {
                 thumbnailFiles.forEach(file => fs.unlinkSync(file));
-                console.log("Thumbnails cleaned up successfully");
             } catch (error) {
                 console.log("Error cleaning up thumbnails: ", error);
                 return reject(error);
@@ -191,9 +250,7 @@ function mergeThumbnails(thumbnailsPath, intervalsDuration, thumbnailsPathRelati
             thumbnailOutputTest.push(outputImagePath.replace(/\\/g, '/'));
 
             resolve(thumbnailOutputTest);
-        }).on('spawn', () => {
-            console.log('Generate Thumbnails Father');
-        });
+        })
     });
 }
 
@@ -205,11 +262,7 @@ function convertResolution(inputPath, outputPath, scaleFilter){
             .outputOptions('-preset', 'veryfast')
             .videoFilter(scaleFilter)
             .output(outputPath)
-            .on('start', (commandLine) => {
-                console.log('Spawned Ffmpeg with command: ' + commandLine);
-            })
             .on('end', () => {
-                console.log('Conversion finished');
                 resolve(outputPath);
             })
             .on('error', (err) => {
