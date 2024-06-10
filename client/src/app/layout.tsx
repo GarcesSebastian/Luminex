@@ -19,7 +19,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" href="/luminex/logo-best.jpeg" />
-        <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
       </head>
       <body className={inter.className}>{children}</body>
     </html>
