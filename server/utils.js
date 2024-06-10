@@ -6,6 +6,7 @@ import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
 import sharp from "sharp";
 import { splitEvery } from "ramda";
+import * as globals from "./globals.js";
 
 const ffmpegPathResolved = ffmpegPath.path || ffmpegPath;
 const ffprobePathResolved = ffprobePath.path || ffprobePath;
@@ -159,12 +160,15 @@ export const generateVideo = async (filePath, width, height, ceiling, quality) =
           if (originalHeight >= 720) resolutions.push(480);
           if (originalHeight >= 480) resolutions.push(360);
 
-          const promises = resolutions.map((res) => {
-            const scaledOutputVideoPath = path.join("videos", `output_${res}p.mp4`);
-            return generateCloneQuality(res, outputVideoPath, scaledOutputVideoPath);
-          });
-
-          await Promise.all(promises);
+          if(globals.IS_QUALITY_MAX){
+            console.log("Quality max");
+            const promises = resolutions.map((res) => {
+              const scaledOutputVideoPath = path.join("videos", `output_${res}p.mp4`);
+              return generateCloneQuality(res, outputVideoPath, scaledOutputVideoPath);
+            });
+  
+            await Promise.all(promises);
+          }
 
           const outputRoutes = await generateSprite(outputVideoPath, width, height, ceiling);
           outputRoutes.push(fileName);
@@ -178,7 +182,7 @@ export const generateVideo = async (filePath, width, height, ceiling, quality) =
   });
 };
 
-const getVideoResolution = (filePath) => {
+export const getVideoResolution = (filePath) => {
   return new Promise((resolve, reject) => {
     const ffprobe = spawn(ffprobePathResolved, [
       "-v",

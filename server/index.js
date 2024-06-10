@@ -9,6 +9,7 @@ import { exec } from 'child_process';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import * as utils from "./utils.js";
+import * as globals from "./globals.js";
 
 const ffmpegPathRoute = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 ffmpeg.setFfmpegPath(ffmpegPathRoute);
@@ -137,6 +138,8 @@ app.post('/convert', upload.single('file'), async (req, res) => {
     const resolution = req.body.resolution;
     const index = req.body.index;
 
+    const resolutionVideo = await utils.getVideoResolution(inputPath);
+
     let scaleFilter;
     switch (resolution) {
         case '1080p':
@@ -158,17 +161,26 @@ app.post('/convert', upload.single('file'), async (req, res) => {
     const outputPath = path.join('videos', `output_${resolution}.mp4`);
     console.log("output path: " + outputPath);
 
-    // verify if the file exists
+    const resolution_select = Number(resolution.split("p")[0]);
+
+    console.log(resolutionVideo.height, ">=", resolution_select);
+
+    if(Number(resolutionVideo.height == resolution_select && resolutionVideo.height < 1080)){
+        return res.status(400).json({message: "Is quality", range: resolution_select})
+    }
+
+    if(index == 3 && resolutionVideo.height >= 1080){
+        return res.status(400).json({message: "Is quality", range: 1080})
+    }
+
     if (!fs.existsSync(outputPath)) {
         console.log('File not found:', outputPath);
-        return res.send("File not found");
+        return res.status(400).json({message: "File not found", range: resolution.split("p")[0]});
     }
 
     client.send(JSON.stringify({ message: 'Conversion started in quality ' + resolution + '...'}));
 
     try {
-        // await convertResolution(inputPath, outputPath, scaleFilter, client);
-
         res.download(outputPath, 'output.mp4', (err) => {
             if (err) {
                 console.error('Error during download:', err);
@@ -179,7 +191,6 @@ app.post('/convert', upload.single('file'), async (req, res) => {
                 if (err) console.error('Error deleting output file:', err);
             });
         })
-
     } catch (error) {
         console.error('Error during conversion:', error.message);
         res.status(500).json({ error: 'Error during conversion' });

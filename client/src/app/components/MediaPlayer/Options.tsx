@@ -151,7 +151,12 @@ export default function Options(props: any) {
                     speed_selected={speed_selected}
                     setSpeed_selected={setSpeed_selected}
                     />
-                <QualityPopup qualities={props.qualities} quality_selected={quality_selected} setQuality_selected={setQuality_selected} isPlaying={props.isPlaying}/>
+                <QualityPopup qualities={props.qualities}
+                    quality_selected={quality_selected} 
+                    setQuality_selected={setQuality_selected} 
+                    isPlaying={props.isPlaying}
+                    qualitiesRange={props.qualitiesRange}
+                />
                 <SpeedPopup speed_selected={speed_selected} setSpeed_selected={setSpeed_selected}/>
             </section>
 

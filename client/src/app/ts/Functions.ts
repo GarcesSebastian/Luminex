@@ -15,9 +15,20 @@ export async function changeVideoResolution(videoFile: any, resolution: any, ind
             });
     
             if (!response.ok) {
+
+                const response_data = await response.json();
+
+                if(response_data.message == "Is quality"){
+                    return {status: response_data.message , range: response_data.range};
+                }
+
+                if(response_data.message == "File not found"){
+                    return {status: response_data.message , range: response_data.range};
+                }
+
                 throw new Error(`Error: ${response.statusText}`);
             }
-    
+
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             return url;

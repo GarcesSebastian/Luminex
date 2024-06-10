@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 interface SettingsProps{
     qualities: string[]
     quality_selected: string,
-    setQuality_selected: (value: string) => void
-    isPlaying: boolean
+    setQuality_selected: (value: string) => void,
+    isPlaying: boolean,
+    qualitiesRange: string[]
 }
 
-export function QualityPopup({isPlaying, qualities, quality_selected, setQuality_selected}: SettingsProps) {
+export function QualityPopup({isPlaying, qualities, qualitiesRange, quality_selected, setQuality_selected}: SettingsProps) {
     useEffect(() => {
         const src: any = qualities.find((qual: any) => qual.range === quality_selected);
         const video = document.querySelector("#videoPlayer") as HTMLVideoElement;
@@ -24,6 +25,29 @@ export function QualityPopup({isPlaying, qualities, quality_selected, setQuality
         }
         video.currentTime = current_time;
     },[quality_selected])
+
+    useEffect(() => {
+        const buttons_q = document.querySelectorAll(".q");
+
+        buttons_q.forEach((q: any) => {
+            const q_text = q.querySelector("p")?.textContent;
+            if(qualitiesRange.includes(q_text as string)){
+                q.classList.remove("hidden");
+            }else{
+                q.classList.add("hidden");
+            }
+        });
+
+        setQuality_selected(qualitiesRange[qualitiesRange.length - 1]);
+        let isIterable = true;
+        buttons_q.forEach((q: any) => {
+            if(!q.classList.contains("hidden") && isIterable){
+                q.querySelector("svg")?.classList.remove("opacity-0");
+                isIterable = false;
+            }
+            
+        });
+    },[qualitiesRange])
 
     const handleBackQuality = () => {
         document.querySelector("#q-settings-video")?.classList.replace("flex", "hidden");

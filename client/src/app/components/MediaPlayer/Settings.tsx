@@ -7,7 +7,7 @@ interface SettingsProps {
 import { Quality } from '../Settings/Quality';
 import { Speed } from '../Settings/Speed';
 
-export function Settings({quality_selected, setQuality_selected, speed_selected}: SettingsProps){
+export function Settings({quality_selected, speed_selected}: SettingsProps){
     const handleQuality = () => {
         document.querySelector("#q-settings-video")?.classList.replace("hidden", "flex");
         document.querySelector("#settings-video")?.classList.replace("flex", "hidden");

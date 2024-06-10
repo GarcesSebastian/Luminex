@@ -7,6 +7,7 @@ import * as States from '../ts/States';
 import { ErrorAlert } from './Alerts/Error';
 import { Loader } from './Loaders/Loader';
 import * as Functions from '../ts/Functions';
+import { url } from 'inspector';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
@@ -25,6 +26,7 @@ export default function MediaPlayer() {
     const [isView, setIsView] = useState<boolean>(false);
     const [isError, setIsError] = useState<boolean>(false);
     const [qualities, setQuality] = useState<any[]>([]);
+    const [qualitiesRange, setQualityRange] = useState<string[]>([]);
 
     function getCookieValue(cookieName: string) {
         const cookies = document.cookie.split(';');
@@ -98,8 +100,7 @@ export default function MediaPlayer() {
             setIsError(false);
         }, 2000);
     }, [isError])
-
-        
+       
     const generateThumbnails = async (file: any, progressBar: any, duration: number): Promise<{ image: string, value: number }[] | undefined> => {
         const formData = new FormData();
         formData.append('file', file);
@@ -184,15 +185,27 @@ export default function MediaPlayer() {
             });
 
             const qualities_range: any = ["360p", "480p", "720p", "1080p"]
+            const qualities_range_clone: any = qualities_range.slice();
             qualities.splice(0, qualities.length);
 
             for (const [index, qual] of qualities_range.entries()) {
-                const url_qual = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
-
-                if(url_qual){
+                const url_qual: any = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
+                
+                if(url_qual && url_qual.status != "File not found" && url_qual.status != "Is quality"){
                     qualities.push({ range: qual, quality: url_qual });
                 }
+
+                if(url_qual.status == "File not found"){
+                    qualities.push({ range: qual, quality: "unknown" });
+                    qualities_range_clone.splice(qualities_range_clone.indexOf(qual), 1);
+                }
+
+                if(url_qual.status == "Is quality"){
+                    qualities.push({ range: `${url_qual.range}p`, quality: videoURL });
+                }
             }
+
+            setQualityRange(qualities_range_clone);
             
             const contentVideo = document.querySelector("#content-video");
 
@@ -289,6 +302,7 @@ export default function MediaPlayer() {
                             setThumbnailFather={setThumbnailFather}
                             videoPlayer={videoElement}
                             qualities={qualities}
+                            qualitiesRange={qualitiesRange}
                         />
                     </div>
                 </div>
