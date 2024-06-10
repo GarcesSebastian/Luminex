@@ -56,7 +56,7 @@ export function Loader(data: Props){
     }
 
     return(
-        <div id="content-loader" className="absolute hidden flex-col w-full h-full justify-center items-center">
+        <div id="content-loader" className="absolute top-0 left-0 hidden flex-col w-full h-full justify-center items-center">
             <div className="cssload-container">
                 <ul className="cssload-flex-container">
                     <li>

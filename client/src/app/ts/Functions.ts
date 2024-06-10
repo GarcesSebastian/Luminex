@@ -24,6 +24,7 @@ export async function changeVideoResolution(videoFile: any, resolution: any, ind
         } catch (error) {
             console.error('Error:', error);
             alert('Failed to convert video.');
+            return null;
         }
     }else{
         alert('Please select a video file.');

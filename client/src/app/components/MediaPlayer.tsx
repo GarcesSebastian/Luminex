@@ -136,29 +136,24 @@ export default function MediaPlayer() {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isUploading) return;
     
-        setVideoSrc("");
-        setNamePlayer("");
-        setDuration(0);
-        setThumbnails([]);
-        setCurrentTime(0);
-        setIsUploading(false);
-        setPlaying(false);
-        document.querySelector("#preview-time-generate")?.classList.replace("flex", "hidden");
-        document.querySelector("#content-upload-file")?.classList.replace("grid", "hidden");
-    
         const file = e.target.files?.[0];
         if (file) {
             const type = file.type.split("/")[0];
 
             if(type != "video"){
                 setIsError(true);
-                setIsUploading(false);
-                setPlaying(false);
-                setIsCounting(false);
-                document.querySelector("#preview-time-generate")?.classList.replace("hidden", "flex");
-                document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
                 return undefined;
             }
+            
+            setVideoSrc("");
+            setNamePlayer("");
+            setDuration(0);
+            setThumbnails([]);
+            setCurrentTime(0);
+            setIsUploading(false);
+            setPlaying(false);
+            document.querySelector("#preview-time-generate")?.classList.replace("flex", "hidden");
+            document.querySelector("#content-upload-file")?.classList.replace("grid", "hidden");
 
             setIsCounting(true);
             const videoURL = URL.createObjectURL(file);
@@ -188,18 +183,16 @@ export default function MediaPlayer() {
                 });
             });
 
-            // const qualities_range: any = ["360p", "480p", "720p", "1080p"]
-            // qualities.splice(0, qualities.length);
+            const qualities_range: any = ["360p", "480p", "720p", "1080p"]
+            qualities.splice(0, qualities.length);
 
-            // for (const [index, qual] of qualities_range.entries()) {
-            //     const url_qual = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
+            for (const [index, qual] of qualities_range.entries()) {
+                const url_qual = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
 
-            //     if(!url_qual){
-            //         return;
-            //     }
-
-            //     qualities.push({ range: qual, quality: url_qual });
-            // }
+                if(url_qual){
+                    qualities.push({ range: qual, quality: url_qual });
+                }
+            }
             
             const contentVideo = document.querySelector("#content-video");
 

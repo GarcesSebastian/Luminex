@@ -103,6 +103,13 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         fs.mkdirSync(videosPath, { recursive: true });
     }
 
+    //delete file start with 'output' and 'thumbnail'
+    fs.readdirSync(thumbnailsPath).forEach(file => {
+        if (file.startsWith('output') || file.startsWith('thumbnail')) {
+            fs.unlinkSync(path.join(thumbnailsPath, file));
+        }
+    });
+
     if(client){
         client.send(JSON.stringify({ message: 'Generating thumbnails...' }));
     }
@@ -148,12 +155,19 @@ app.post('/convert', upload.single('file'), async (req, res) => {
             return res.status(400).send('Unsupported resolution');
     }
 
-    const outputPath = path.join('uploads', `output-${index}.mp4`);
+    const outputPath = path.join('videos', `output_${resolution}.mp4`);
+    console.log("output path: " + outputPath);
+
+    // verify if the file exists
+    if (!fs.existsSync(outputPath)) {
+        console.log('File not found:', outputPath);
+        return res.send("File not found");
+    }
 
     client.send(JSON.stringify({ message: 'Conversion started in quality ' + resolution + '...'}));
 
     try {
-        await convertResolution(inputPath, outputPath, scaleFilter, client);
+        // await convertResolution(inputPath, outputPath, scaleFilter, client);
 
         res.download(outputPath, 'output.mp4', (err) => {
             if (err) {
@@ -165,6 +179,7 @@ app.post('/convert', upload.single('file'), async (req, res) => {
                 if (err) console.error('Error deleting output file:', err);
             });
         })
+
     } catch (error) {
         console.error('Error during conversion:', error.message);
         res.status(500).json({ error: 'Error during conversion' });

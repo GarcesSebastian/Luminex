@@ -3,12 +3,15 @@ import fs from 'fs';
 import { spawn } from "child_process";
 import concat from "concat-stream";
 import ffmpegPath from "ffmpeg-static";
+import ffprobePath from "ffprobe-static";
 import sharp from "sharp";
 import { splitEvery } from "ramda";
 
+const ffmpegPathResolved = ffmpegPath.path || ffmpegPath;
+const ffprobePathResolved = ffprobePath.path || ffprobePath;
+
 const mapToArrayChunks = (map, chunkSize) => {
   const array = [...map.values()];
-
   return splitEvery(chunkSize, array);
 };
 
@@ -134,42 +137,148 @@ export const generateSprite = async (path, width, height, ceils) => {
 export const generateVideo = async (filePath, width, height, ceiling, quality) => {
   const fileName = "output.mp4";
   const outputVideoPath = path.join("videos", fileName);
-  const scaledOutputVideoPath = path.join("videos", `output_${quality}p.mp4`);
 
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    if (!await fileExists(filePath)) {
+      return reject(new Error(`El archivo ${filePath} no existe.`));
+    }
+
     fs.copyFile(filePath, outputVideoPath, async (err) => {
       if (err) {
         console.error("Error al copiar el archivo:", err);
         reject(err);
       } else {
         console.log("Video guardado exitosamente:", outputVideoPath);
-        const outputRoutes = await generateSprite(outputVideoPath, width, height, ceiling);
-        outputRoutes.push(fileName);
-        resolve(outputRoutes);
+
+        try {
+          const { width: originalWidth, height: originalHeight } = await getVideoResolution(outputVideoPath);
+          console.log(`Resolución actual del video: ${originalWidth}x${originalHeight}`);
+
+          const resolutions = [];
+          if (originalHeight >= 1080) resolutions.push(720);
+          if (originalHeight >= 720) resolutions.push(480);
+          if (originalHeight >= 480) resolutions.push(360);
+
+          const promises = resolutions.map((res) => {
+            const scaledOutputVideoPath = path.join("videos", `output_${res}p.mp4`);
+            return generateCloneQuality(res, outputVideoPath, scaledOutputVideoPath);
+          });
+
+          await Promise.all(promises);
+
+          const outputRoutes = await generateSprite(outputVideoPath, width, height, ceiling);
+          outputRoutes.push(fileName);
+          resolve(outputRoutes);
+        } catch (error) {
+          console.error("Error al generar el video:", error);
+          reject(error);
+        }
       }
     });
   });
 };
 
-const generateCloneQuality = async () => {
-    try {
-      const scaleFilter = `scale=-2:${quality}p`;
-      await convertResolution(outputVideoPath, scaledOutputVideoPath, scaleFilter);
+const getVideoResolution = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const ffprobe = spawn(ffprobePathResolved, [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=width,height",
+      "-of",
+      "json",
+      filePath,
+    ]);
 
-      console.log(`Video convertido a ${quality} exitosamente:`, scaledOutputVideoPath);
+    let output = '';
 
-      const outputRoutes = await generateSprite(scaledOutputVideoPath, width, height, ceiling);
-      outputRoutes.push(fileName);
-      resolve(outputRoutes);
-    } catch (error) {
-      console.error("Error al generar el video:", error);
-      reject(error);
-    }
-}
+    ffprobe.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    ffprobe.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const resolution = JSON.parse(output).streams[0];
+          resolve({ width: resolution.width, height: resolution.height });
+        } catch (error) {
+          reject(new Error(`Error parsing ffprobe output: ${error.message}`));
+        }
+      } else {
+        reject(new Error(`ffprobe exited with code ${code}`));
+      }
+    });
+
+    ffprobe.on('error', (err) => {
+      console.error('Error during ffprobe execution:', err.message);
+      reject(err);
+    });
+  });
+};
+
+const getVideoDuration = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const ffprobe = spawn(ffprobePathResolved, [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "json",
+      filePath,
+    ]);
+
+    let output = '';
+
+    ffprobe.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    ffprobe.stderr.on('data', (data) => {
+      console.error(`ffprobe stderr: ${data.toString()}`);
+    });
+
+    ffprobe.on('close', (code) => {
+      if (code === 0) {
+        try {
+          const duration = parseFloat(JSON.parse(output).format.duration);
+          resolve(duration);
+        } catch (error) {
+          reject(new Error(`Error parsing ffprobe output: ${error.message}`));
+        }
+      } else {
+        reject(new Error(`ffprobe exited with code ${code}`));
+      }
+    });
+
+    ffprobe.on('error', (err) => {
+      console.error('Error during ffprobe execution:', err.message);
+      reject(err);
+    });
+  });
+};
+
+const fileExists = (filePath) => {
+  return new Promise((resolve) => {
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+      resolve(!err);
+    });
+  });
+};
 
 const convertResolution = async (inputPath, outputPath, scaleFilter) => {
+  const duration = await getVideoDuration(inputPath);
+
   return new Promise((resolve, reject) => {
-    const ffmpeg = spawn(ffmpegPath, [
+    const startTime = Date.now();
+    let lastTime = startTime;
+    let lastSize = 0;
+
+    const ffmpeg = spawn(ffmpegPathResolved, [
       "-i",
       inputPath,
       "-vf",
@@ -180,8 +289,35 @@ const convertResolution = async (inputPath, outputPath, scaleFilter) => {
       "23",
       "-preset",
       "veryfast",
+      "-y",
       outputPath,
+      "-progress", 
+      "pipe:1"
     ]);
+
+    ffmpeg.stdout.on('data', (data) => {
+      const output = data.toString();
+      const timeMatch = output.match(/out_time_ms=(\d+)/);
+      const fileSize = fs.statSync(outputPath).size;
+
+      if (timeMatch) {
+        const time = parseInt(timeMatch[1], 10) / 1000000;
+        const currentTime = Date.now();
+        const elapsedTime = (currentTime - lastTime) / 1000;
+        const dataProcessed = fileSize - lastSize;
+
+        if (elapsedTime > 0) {
+          const speed = dataProcessed / elapsedTime / (1024 * 1024);
+          console.log(`Velocidad de descarga: ${speed.toFixed(2)} MB/s`);
+        }
+
+        const progress = (time / duration) * 100;
+        console.log(`Progreso: ${progress.toFixed(2)}%`);
+
+        lastTime = currentTime;
+        lastSize = fileSize;
+      }
+    });
 
     ffmpeg.on("close", (code) => {
       if (code === 0) {
@@ -192,8 +328,17 @@ const convertResolution = async (inputPath, outputPath, scaleFilter) => {
     });
 
     ffmpeg.on("error", (err) => {
-      console.error("Error durante la conversión:", err.message);
+      console.error("Error during ffmpeg execution:", err.message);
       reject(err);
     });
   });
+};
+
+const generateCloneQuality = async (quality, outputVideoPath, scaledOutputVideoPath) => {
+  try {
+    const scaleFilter = `scale=-2:${quality}`;
+    await convertResolution(outputVideoPath, scaledOutputVideoPath, scaleFilter);
+  } catch (error) {
+    console.error("Error al generar el video:", error);
+  }
 };
