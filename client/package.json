@@ -2,7 +2,7 @@
   "name": "luminex-player",
   "version": "1.0.0",
   "description": "Reproductor of video player",
-  "main": "dist/index.js",
+  "main": "dist/index.ts",
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
