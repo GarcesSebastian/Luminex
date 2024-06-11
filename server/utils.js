@@ -1,184 +1,153 @@
 import path from 'path';
 import fs from 'fs';
 import { spawn } from "child_process";
-import concat from "concat-stream";
 import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
 import sharp from "sharp";
-import { splitEvery } from "ramda";
 import * as globals from "./globals.js";
 
-const ffmpegPathResolved = ffmpegPath.path || ffmpegPath;
 const ffprobePathResolved = ffprobePath.path || ffprobePath;
 
-const mapToArrayChunks = (map, chunkSize) => {
-  const array = [...map.values()];
-  return splitEvery(chunkSize, array);
-};
-
-const splitBuffer = (buffer, startMarker, endMarker) => {
-  let buffers = [];
-  let start = buffer.indexOf(startMarker);
-  let end = buffer.indexOf(endMarker, start) + endMarker.length;
-
-  while (start !== -1 && end !== -1) {
-    const bufferedImage = buffer.slice(start, end);
-    buffers.push(bufferedImage);
-    start = buffer.indexOf(startMarker, end);
-    end = buffer.indexOf(endMarker, start) + endMarker.length;
-  }
-
-  return buffers;
-};
-
-export const generateSprite = async (path, width, height, ceils) => {
-  let data_path = path;
-
-  let thumbWidth = width;
-  let thumbHeight = height;
-
+export const generateThumbnails = async (path, width, height, ceils, client) => {
   try {
-    if (ffmpegPath === null) {
-      throw new Error("ffmpegPath is null");
-    }
+      if (!ffmpegPath) throw new Error("ffmpegPath is null");
 
-    const ffmpeg = spawn(ffmpegPath, [
-      "-i",
-      data_path,
-      "-r",
-      "1",
-      "-s",
-      `${width}x${height}`,
-      "-f",
-      "image2pipe",
-      "-",
-    ]);
+      const startTime = Date.now(); // Definir el tiempo de inicio
 
-    const imageFiles = await new Promise((resolve, reject) => {
-      ffmpeg.stdout.pipe(
-        concat((allImagesBuffer) => {
-          const imageBuffers = splitBuffer(
-            allImagesBuffer,
-            Buffer.from([0xff, 0xd8]),
-            Buffer.from([0xff, 0xd9])
-          );
+      const args = [
+          "-i",
+          path,
+          "-r",
+          "1",
+          "-s",
+          `${width}x${height}`,
+          "-f",
+          "image2pipe",
+          "-"
+      ];
+      
+      const ffmpeg = spawn(ffmpegPath, args);
 
-          if (imageBuffers.length === 0) {
-            reject("No images found");
+      const imageBuffers = await new Promise((resolve, reject) => {
+          const buffers = [];
+          ffmpeg.stdout.on("data", (data) => buffers.push(data));
+          ffmpeg.stdout.on("end", () => resolve(buffers));
+          ffmpeg.on("error", (err) => reject(err));
+      });
+
+      const totalImages = Math.ceil(imageBuffers.length / (ceils * ceils));
+      const spriteConfig = {
+          create: {
+              width: width * ceils,
+              height: height * ceils,
+              channels: 4,
+              background: { r: 0, g: 0, b: 0, alpha: 1 }
           }
+      };
 
-          resolve(imageBuffers);
-        })
-      );
-    });
+      // Enviar el estado al cliente antes de comenzar la generación de thumbnails
+      client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: 'Calculating...' }));
 
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) {
-        console.error(`ffmpeg exited with code ${code}`);
-        return;
-      }
-    });
+      let pathFilesRoutes = [];
+      let processedImages = 0;
 
-    let spriteWidth = thumbWidth * ceils;
-    let spriteHeight = thumbHeight * ceils;
+      for (let i = 0; i < totalImages; i++) {
+          const startIndex = i * ceils * ceils;
+          const endIndex = Math.min((i + 1) * ceils * ceils, imageBuffers.length);
+          const chunkBuffers = imageBuffers.slice(startIndex, endIndex);
 
-    const spriteConfig = {
-      create: {
-        width: spriteWidth,
-        height: spriteHeight,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 1 },
-      },
-    };
+          const spriteFile = `./thumbnails/output-${i + 1}.png`;
+          const spriteFileAbsolute = `/thumbnails/output-${i + 1}.png`;
 
-    let png = sharp(spriteConfig);
+          const compositeOptions = chunkBuffers.map((buffer, index) => ({
+              input: buffer,
+              top: Math.floor(index / ceils) * height,
+              left: (index % ceils) * width,
+              ...spriteConfig
+          }));
 
-    const imageFilesChunked = mapToArrayChunks(imageFiles, ceils * ceils);
-    const pathFilesRoutes = [];
+          await sharp(spriteConfig).composite(compositeOptions).toFile(spriteFile);
+          pathFilesRoutes.push(spriteFileAbsolute);
+          processedImages++;
 
-    for (let i = 0; i < imageFilesChunked.length; i++) {
-      console.log("Generating sprite chunk: ", i + 1, "/", imageFilesChunked.length);
-      const imageFilesChunk = imageFilesChunked[i];
-      const spriteFile = "./thumbnails/output-" + (i + 1) + ".png";
-      const spriteFileAbsolute = "/thumbnails/output-" + (i + 1) + ".png";
-      pathFilesRoutes.push(spriteFileAbsolute);
-      console.log("Sprite file: ", spriteFile);
-      const compositeOptions = [];
-      let dst_x = 0;
-      let dst_y = 0;
+          const progress = (processedImages / totalImages) * 100;
+          const elapsedTime = (Date.now() - startTime) / 1000;
+          const estimatedTotalTime = (elapsedTime / processedImages) * totalImages;
+          const estimatedRemainingTime = estimatedTotalTime - elapsedTime;
 
-      for (let j = 0; j < imageFilesChunk.length; j++) {
-        const file = imageFilesChunk[j];
-
-        compositeOptions.push({
-          input: file,
-          top: dst_y,
-          left: dst_x,
-          ...spriteConfig,
-        });
-
-        if ((j + 1) % ceils === 0) {
-          dst_x = 0;
-          dst_y += thumbHeight;
-        } else {
-          dst_x += thumbWidth;
-        }
+          client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: progress.toFixed(2), estimatedTime: formatTime(estimatedRemainingTime) }));
       }
 
-      png = sharp(spriteConfig);
-      png.composite(compositeOptions).toFile(spriteFile);
-    }
-
-    return pathFilesRoutes;
+      return pathFilesRoutes;
   } catch (error) {
-    console.error("Error generating sprite: ", error);
+      console.error("Error generating sprite: ", error);
+      throw error;
   }
 };
 
-export const generateVideo = async (filePath, width, height, ceiling, quality) => {
+export const generateVideo = async (filePath, width, height, ceiling, client) => {
   const fileName = "output.mp4";
   const outputVideoPath = path.join("videos", fileName);
 
   return new Promise(async (resolve, reject) => {
-    if (!await fileExists(filePath)) {
-      return reject(new Error(`El archivo ${filePath} no existe.`));
-    }
-
-    fs.copyFile(filePath, outputVideoPath, async (err) => {
-      if (err) {
-        console.error("Error al copiar el archivo:", err);
-        reject(err);
-      } else {
-        console.log("Video guardado exitosamente:", outputVideoPath);
-
-        try {
-          const { width: originalWidth, height: originalHeight } = await getVideoResolution(outputVideoPath);
-          console.log(`Resolución actual del video: ${originalWidth}x${originalHeight}`);
-
-          const resolutions = [];
-          if (originalHeight >= 1080) resolutions.push(720);
-          if (originalHeight >= 720) resolutions.push(480);
-          if (originalHeight >= 480) resolutions.push(360);
-
-          if(globals.IS_QUALITY_MAX){
-            console.log("Quality max");
-            const promises = resolutions.map((res) => {
-              const scaledOutputVideoPath = path.join("videos", `output_${res}p.mp4`);
-              return generateCloneQuality(res, outputVideoPath, scaledOutputVideoPath);
-            });
-  
-            await Promise.all(promises);
-          }
-
-          const outputRoutes = await generateSprite(outputVideoPath, width, height, ceiling);
-          outputRoutes.push(fileName);
-          resolve(outputRoutes);
-        } catch (error) {
-          console.error("Error al generar el video:", error);
-          reject(error);
-        }
+      if (!await fileExists(filePath)) {
+          return reject(new Error(`El archivo ${filePath} no existe.`));
       }
-    });
+
+      const fileSize = fs.statSync(filePath).size;
+      let copiedBytes = 0;
+
+      const readStream = fs.createReadStream(filePath);
+      const writeStream = fs.createWriteStream(outputVideoPath);
+
+      readStream.on('data', (chunk) => {
+          copiedBytes += chunk.length;
+          const progress = (copiedBytes / fileSize) * 100;
+          client.send(JSON.stringify({ message: 'Copying video...', progress: progress.toFixed(2), estimatedTime: 'Calculating...' }));
+      });
+
+      readStream.on('error', (err) => {
+          console.error("Error al leer el archivo:", err);
+          reject(err);
+      });
+
+      writeStream.on('error', (err) => {
+          console.error("Error al escribir el archivo:", err);
+          reject(err);
+      });
+
+      writeStream.on('finish', async () => {
+          try {
+              const { height: originalHeight } = await getVideoResolution(outputVideoPath);
+
+              const resolutions = [];
+              if (originalHeight >= 1080) resolutions.push(720);
+              if (originalHeight >= 720) resolutions.push(480);
+              if (originalHeight >= 480) resolutions.push(360);
+
+              if (globals.IS_QUALITY_MAX) {
+                  const promises = resolutions.map((res) => {
+                      const scaledOutputVideoPath = path.join("videos", `output_${res}p.mp4`);
+                      return generateCloneQuality(res, outputVideoPath, scaledOutputVideoPath, client);
+                  });
+
+                  await Promise.all(promises);
+              }
+
+              if (resolutions.length <= 0) {
+                  client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 90, estimatedTime: '10 seconds' }));
+              }
+
+              const outputRoutes = await generateThumbnails(outputVideoPath, width, height, ceiling, client);
+              outputRoutes.push(fileName);
+              resolve(outputRoutes);
+          } catch (error) {
+              console.error("Error al generar el video:", error);
+              reject(error);
+          }
+      });
+
+      readStream.pipe(writeStream);
   });
 };
 
@@ -222,50 +191,6 @@ export const getVideoResolution = (filePath) => {
   });
 };
 
-const getVideoDuration = (filePath) => {
-  return new Promise((resolve, reject) => {
-    const ffprobe = spawn(ffprobePathResolved, [
-      "-v",
-      "error",
-      "-select_streams",
-      "v:0",
-      "-show_entries",
-      "format=duration",
-      "-of",
-      "json",
-      filePath,
-    ]);
-
-    let output = '';
-
-    ffprobe.stdout.on('data', (data) => {
-      output += data.toString();
-    });
-
-    ffprobe.stderr.on('data', (data) => {
-      console.error(`ffprobe stderr: ${data.toString()}`);
-    });
-
-    ffprobe.on('close', (code) => {
-      if (code === 0) {
-        try {
-          const duration = parseFloat(JSON.parse(output).format.duration);
-          resolve(duration);
-        } catch (error) {
-          reject(new Error(`Error parsing ffprobe output: ${error.message}`));
-        }
-      } else {
-        reject(new Error(`ffprobe exited with code ${code}`));
-      }
-    });
-
-    ffprobe.on('error', (err) => {
-      console.error('Error during ffprobe execution:', err.message);
-      reject(err);
-    });
-  });
-};
-
 const fileExists = (filePath) => {
   return new Promise((resolve) => {
     fs.access(filePath, fs.constants.F_OK, (err) => {
@@ -274,75 +199,128 @@ const fileExists = (filePath) => {
   });
 };
 
-const convertResolution = async (inputPath, outputPath, scaleFilter) => {
-  const duration = await getVideoDuration(inputPath);
+const generateCloneQuality = async (quality, outputVideoPath, scaledOutputVideoPath, client) => {
+  try {
+    await generateQuality(outputVideoPath, scaledOutputVideoPath, quality, client);
+  } catch (error) {
+    console.error("Error al generar el video:", error);
+  }
+};
 
+export const generateQuality = (filePath, outputPath, resolution, client) => {
   return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-    let lastTime = startTime;
-    let lastSize = 0;
+      const args = [
+          '-y',
+          '-i', filePath,
+          '-vf', `scale=-2:${resolution}` || 'scale=-2:360',
+          '-c:v', 'libx264',
+          '-preset', 'ultrafast',
+          '-crf', '28',
+          '-threads', '8',
+          '-c:a', 'copy',
+          outputPath
+      ];
 
-    const ffmpeg = spawn(ffmpegPathResolved, [
-      "-i",
-      inputPath,
-      "-vf",
-      scaleFilter,
-      "-c:v",
-      "libx264",
-      "-crf",
-      "23",
-      "-preset",
-      "veryfast",
-      "-y",
-      outputPath,
-      "-progress", 
-      "pipe:1"
-    ]);
+      const ffmpeg = spawn(ffmpegPath, args);
 
-    ffmpeg.stdout.on('data', (data) => {
-      const output = data.toString();
-      const timeMatch = output.match(/out_time_ms=(\d+)/);
-      const fileSize = fs.statSync(outputPath).size;
+      let duration = 0;
+      let startTime = Date.now();
+      let processedSize = 0;
+      let speedSum = 0;
+      let speedCount = 0;
 
-      if (timeMatch) {
-        const time = parseInt(timeMatch[1], 10) / 1000000;
-        const currentTime = Date.now();
-        const elapsedTime = (currentTime - lastTime) / 1000;
-        const dataProcessed = fileSize - lastSize;
+      const stats = fs.statSync(filePath);
+      const fileSize = stats.size;
 
-        if (elapsedTime > 0) {
-          const speed = dataProcessed / elapsedTime / (1024 * 1024);
-          console.log(`Velocidad de descarga: ${speed.toFixed(2)} MB/s`);
+      ffmpeg.stderr.on('data', (data) => {
+          const dataStr = data.toString();
+
+          const durationMatch = dataStr.match(/Duration: (\d+):(\d+):(\d+.\d+)/);
+          if (durationMatch) {
+              const hours = parseInt(durationMatch[1]);
+              const minutes = parseInt(durationMatch[2]);
+              const seconds = parseFloat(durationMatch[3]);
+              duration = hours * 3600 + minutes * 60 + seconds;
+          }
+
+          const timeMatch = dataStr.match(/time=(\d+):(\d+):(\d+.\d+)/);
+          if (timeMatch) {
+              const elapsedTime = (Date.now() - startTime) / 1000;
+
+              const hours = parseInt(timeMatch[1]);
+              const minutes = parseInt(timeMatch[2]);
+              const seconds = parseFloat(timeMatch[3]);
+              const processedDuration = hours * 3600 + minutes * 60 + seconds;
+
+              const percentage = (processedDuration / duration) * 100;
+
+              processedSize = (processedDuration / duration) * fileSize;
+
+              const speedMBps = processedSize / elapsedTime / (1024 * 1024);
+              speedSum += speedMBps;
+              speedCount++;
+
+              const averageSpeed = speedSum / speedCount;
+              const remainingSize = fileSize - processedSize;
+              const estimatedTimeRemaining = remainingSize / (averageSpeed * 1024 * 1024);
+              const estimatedTotalTime = elapsedTime + estimatedTimeRemaining;
+
+              const hoursEst = Math.floor(estimatedTotalTime / 3600);
+              const minutesEst = Math.floor((estimatedTotalTime % 3600) / 60);
+              const secondsEst = Math.floor(estimatedTotalTime % 60);
+              
+              let estimatedTimeStr = '';
+              if (hoursEst > 0) {
+                  estimatedTimeStr += `${hoursEst} hour${hoursEst > 1 ? 's' : ''} `;
+              }
+              if (minutesEst > 0) {
+                  estimatedTimeStr += `${minutesEst} minute${minutesEst > 1 ? 's' : ''} `;
+              }
+              if (secondsEst > 0) {
+                  estimatedTimeStr += `${secondsEst} second${secondsEst > 1 ? 's' : ''}`;
+              }
+
+              client.send(JSON.stringify({ message: 'Generating videos...', progress: percentage.toFixed(2), estimatedTime: estimatedTimeStr }));
+          }
+      });
+
+      ffmpeg.on('close', (code) => {
+        const endTime = Date.now();
+        const totalTime = (endTime - startTime) / 1000;
+        const hours = Math.floor(totalTime / 3600);
+        const minutes = Math.floor((totalTime % 3600) / 60);
+        const seconds = Math.floor(totalTime % 60);
+        
+        let formattedTime = '';
+        if (hours > 0) {
+            formattedTime += `${hours} hour${hours > 1 ? 's' : ''} `;
         }
-
-        const progress = (time / duration) * 100;
-        console.log(`Progreso: ${progress.toFixed(2)}%`);
-
-        lastTime = currentTime;
-        lastSize = fileSize;
-      }
-    });
-
-    ffmpeg.on("close", (code) => {
-      if (code === 0) {
-        resolve(outputPath);
-      } else {
-        reject(new Error(`ffmpeg exited with code ${code}`));
-      }
-    });
-
-    ffmpeg.on("error", (err) => {
-      console.error("Error during ffmpeg execution:", err.message);
-      reject(err);
+        if (minutes > 0) {
+            formattedTime += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+        }
+        if (seconds > 0) {
+            formattedTime += `${seconds} second${seconds > 1 ? 's' : ''}`;
+        }
+    
+        if (code === 0) {
+            client.send(JSON.stringify({ message: 'Conversion Completed', progress: 100, estimatedTime: formattedTime }));
+            resolve();
+        } else {
+            reject(new Error(`FFmpeg process exited with code ${code}`));
+        }
     });
   });
 };
 
-const generateCloneQuality = async (quality, outputVideoPath, scaledOutputVideoPath) => {
-  try {
-    const scaleFilter = `scale=-2:${quality}`;
-    await convertResolution(outputVideoPath, scaledOutputVideoPath, scaleFilter);
-  } catch (error) {
-    console.error("Error al generar el video:", error);
-  }
+const formatTime = (timeInSeconds) => {
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = Math.floor(timeInSeconds % 60);
+
+  let formattedTime = '';
+  if (hours > 0) formattedTime += `${hours} hour${hours > 1 ? 's' : ''} `;
+  if (minutes > 0) formattedTime += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+  formattedTime += `${seconds} second${seconds > 1 ? 's' : ''}`;
+
+  return formattedTime;
 };

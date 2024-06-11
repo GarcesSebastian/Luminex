@@ -184,28 +184,28 @@ export default function MediaPlayer() {
                 });
             });
 
-            const qualities_range: any = ["360p", "480p", "720p", "1080p"]
-            const qualities_range_clone: any = qualities_range.slice();
-            qualities.splice(0, qualities.length);
+            // const qualities_range: any = ["360p", "480p", "720p", "1080p"]
+            // const qualities_range_clone: any = qualities_range.slice();
+            // qualities.splice(0, qualities.length);
 
-            for (const [index, qual] of qualities_range.entries()) {
-                const url_qual: any = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
+            // for (const [index, qual] of qualities_range.entries()) {
+            //     const url_qual: any = await Functions.changeVideoResolution(file, qual, index, getCookieValue('clientId') || 'unknown');
                 
-                if(url_qual && url_qual.status != "File not found" && url_qual.status != "Is quality"){
-                    qualities.push({ range: qual, quality: url_qual });
-                }
+            //     if(url_qual && url_qual.status != "File not found" && url_qual.status != "Is quality"){
+            //         qualities.push({ range: qual, quality: url_qual });
+            //     }
 
-                if(url_qual.status == "File not found"){
-                    qualities.push({ range: qual, quality: "unknown" });
-                    qualities_range_clone.splice(qualities_range_clone.indexOf(qual), 1);
-                }
+            //     if(url_qual.status == "File not found"){
+            //         qualities.push({ range: qual, quality: "unknown" });
+            //         qualities_range_clone.splice(qualities_range_clone.indexOf(qual), 1);
+            //     }
 
-                if(url_qual.status == "Is quality"){
-                    qualities.push({ range: `${url_qual.range}p`, quality: videoURL });
-                }
-            }
+            //     if(url_qual.status == "Is quality"){
+            //         qualities.push({ range: `${url_qual.range}p`, quality: videoURL });
+            //     }
+            // }
 
-            setQualityRange(qualities_range_clone);
+            // setQualityRange(qualities_range_clone);
             
             const contentVideo = document.querySelector("#content-video");
 

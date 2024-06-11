@@ -17,6 +17,8 @@ export function Loader(data: Props){
     },[data.isLoading])
 
     const [stateLoader, setStateLoader] = useState<string>("Generate..");
+    const [estimatedTime, setEstimatedTime] = useState<string>();
+    const [progress, setProgress] = useState<number>(0);
 
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:4000');
@@ -27,6 +29,7 @@ export function Loader(data: Props){
 
         socket.onopen = async function(event) {
             socket.send(JSON.stringify({ type: 'clientId', id: clientId }));
+            console.log('Conexión establecida con el servidor WebSocket');
         };
         
         socket.onmessage = function(event: MessageEvent) {
@@ -39,6 +42,8 @@ export function Loader(data: Props){
 
             if(message){
                 setStateLoader(message.message);
+                setEstimatedTime(message.estimatedTime);
+                setProgress(message.progress);
             }
         };
           
@@ -66,7 +71,25 @@ export function Loader(data: Props){
                     </li>
                 </ul>
             </div>
-            <p className="text-indigo-500 -mt-5 text-lg font-semibold">{stateLoader}</p>
+
+            <div className="prose w-full max-w-md text-gray-500 prose-sm prose-headings:font-normal prose-headings:text-xl">
+                <div>
+                    <h1 className="text-indigo-500 -mt-5 text-lg font-semibold">{stateLoader}</h1>
+                    <p className="text-balance">
+                        Estimated total conversion time: <span className="text-balance font-bold ">{estimatedTime}</span>
+                    </p>
+                </div>
+            </div>
+            <div className="mt-4 border-t w-full max-w-md">
+                <div className="w-full">
+                    <div className="text-sm text-gray-500" x-text="progress + '%'">{progress}%</div>
+                    <div className="relative h-1 mt-2 bg-gray-400/70 rounded-full">
+                        <div style={{width: ` ${progress}%`}} className="absolute top-0 left-0 h-full bg-indigo-500 rounded-full w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+
         </div>
     )
 }

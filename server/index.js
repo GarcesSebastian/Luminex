@@ -5,7 +5,6 @@ import ffmpeg from 'fluent-ffmpeg';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import * as utils from "./utils.js";
@@ -93,8 +92,9 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     console.log('File uploaded:', filePath);
     const thumbnailsPath = path.join('thumbnails');
     const videosPath = path.join('videos');
-    const thumbnailsPathRelative = '/thumbnails';
-    const imageCombination = [];
+
+    client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: "0 minutes" }));
+
 
     if (!fs.existsSync(thumbnailsPath)) {
         fs.mkdirSync(thumbnailsPath, { recursive: true });
@@ -104,7 +104,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
         fs.mkdirSync(videosPath, { recursive: true });
     }
 
-    //delete file start with 'output' and 'thumbnail'
     fs.readdirSync(thumbnailsPath).forEach(file => {
         if (file.startsWith('output') || file.startsWith('thumbnail')) {
             fs.unlinkSync(path.join(thumbnailsPath, file));
@@ -112,9 +111,15 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     });
 
     if(client){
-        client.send(JSON.stringify({ message: 'Generating thumbnails...' }));
+        client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: "0 minutes" }));
     }
-    const videoPath = await utils.generateVideo(filePath, 175, 100, ceiling, 1080);
+
+    if(!globals.IS_GENERATE_VIDEOS){
+        const outputRoutes = await utils.generateThumbnails(filePath, 175, 100, ceiling, client)
+        return res.json({ message: "Thumbnails generated successfully", images: outputRoutes });
+    }
+
+    const videoPath = await utils.generateVideo(filePath, 175, 100, ceiling, client);
     fs.unlinkSync(path.join(includeTmp + 'videos/', videoPath[videoPath.length - 1]));
     return res.json({ message: "Thumbnails generated successfully", images: videoPath });
 });
@@ -140,30 +145,9 @@ app.post('/convert', upload.single('file'), async (req, res) => {
 
     const resolutionVideo = await utils.getVideoResolution(inputPath);
 
-    let scaleFilter;
-    switch (resolution) {
-        case '1080p':
-            scaleFilter = 'scale=-2:1080';
-            break;
-        case '720p':
-            scaleFilter = 'scale=-2:720';
-            break;
-        case '480p':
-            scaleFilter = 'scale=-2:480';
-            break;
-        case '360p':
-            scaleFilter = 'scale=-2:360';
-            break;
-        default:
-            return res.status(400).send('Unsupported resolution');
-    }
-
     const outputPath = path.join('videos', `output_${resolution}.mp4`);
-    console.log("output path: " + outputPath);
 
     const resolution_select = Number(resolution.split("p")[0]);
-
-    console.log(resolutionVideo.height, ">=", resolution_select);
 
     if(Number(resolutionVideo.height == resolution_select && resolutionVideo.height < 1080)){
         return res.status(400).json({message: "Is quality", range: resolution_select})
@@ -174,11 +158,10 @@ app.post('/convert', upload.single('file'), async (req, res) => {
     }
 
     if (!fs.existsSync(outputPath)) {
-        console.log('File not found:', outputPath);
         return res.status(400).json({message: "File not found", range: resolution.split("p")[0]});
     }
 
-    client.send(JSON.stringify({ message: 'Conversion started in quality ' + resolution + '...'}));
+    client.send(JSON.stringify({ message: 'Conversion started in quality ' + resolution + '...', progress: 100, estimatedTime: "0 minutes" }));
 
     try {
         res.download(outputPath, 'output.mp4', (err) => {
@@ -196,7 +179,7 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         res.status(500).json({ error: 'Error during conversion' });
     }
 
-    client.send(JSON.stringify({ message: 'Conversion finished'}));
+    client.send(JSON.stringify({ message: 'Conversion finished', progress: 100, estimatedTime: "0 minutes" }));
 });
 
 server.listen(port, () => {

@@ -33,6 +33,7 @@ export function QualityPopup({isPlaying, qualities, qualitiesRange, quality_sele
             const q_text = q.querySelector("p")?.textContent;
             if(qualitiesRange.includes(q_text as string)){
                 q.classList.remove("hidden");
+                q.querySelector("svg")?.classList.add("opacity-0");
             }else{
                 q.classList.add("hidden");
             }
