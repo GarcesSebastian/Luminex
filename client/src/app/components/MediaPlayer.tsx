@@ -107,7 +107,7 @@ export default function MediaPlayer() {
         formData.append('duration', duration.toString());
 
         try {
-            const response = await fetch('http://localhost:4000/upload', {
+            const response = await fetch('http://192.168.1.10:4000/upload', {
                 method: 'POST',
                 headers: {
                     'client-id': getCookieValue('clientId') || 'unknown',
