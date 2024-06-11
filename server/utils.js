@@ -10,78 +10,61 @@ const ffprobePathResolved = ffprobePath.path || ffprobePath;
 
 export const generateThumbnails = async (path, width, height, ceils, client) => {
   try {
-      if (!ffmpegPath) throw new Error("ffmpegPath is null");
+    if (!ffmpegPath) throw new Error("ffmpegPath is null");
 
-      const startTime = Date.now(); // Definir el tiempo de inicio
+    const startTime = Date.now();
 
-      const args = [
-          "-i",
-          path,
-          "-r",
-          "1",
-          "-s",
-          `${width}x${height}`,
-          "-f",
-          "image2pipe",
-          "-"
-      ];
-      
-      const ffmpeg = spawn(ffmpegPath, args);
+    const args = [
+      "-i", path,
+      "-r", "1",
+      "-s", `${width}x${height}`,
+      "-preset", "ultrafast",
+      "-threads", "8",
+      "-f", "image2pipe",
+      "-"
+    ];
+    
+    const ffmpeg = spawn(ffmpegPath, args);
 
-      const imageBuffers = await new Promise((resolve, reject) => {
-          const buffers = [];
-          ffmpeg.stdout.on("data", (data) => buffers.push(data));
-          ffmpeg.stdout.on("end", () => resolve(buffers));
-          ffmpeg.on("error", (err) => reject(err));
+    const imageBuffers = await new Promise((resolve, reject) => {
+      const buffers = [];
+      ffmpeg.stdout.on("data", (data) => buffers.push(data));
+      ffmpeg.stdout.on("end", () => resolve(buffers));
+      ffmpeg.on("error", (err) => reject(err));
+    });
+
+    client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: 'Calculating...' }));
+
+    const spriteArgs = [
+      "-i", "-",
+      "-filter_complex", `tile=${ceils}x${ceils}`,
+      "-preset", "ultrafast",
+      "-threads", "8",
+      "./thumbnails/output-%d.png"
+    ];
+
+    const spriteFFmpeg = spawn(ffmpegPath, spriteArgs);
+
+    imageBuffers.forEach((buffer) => spriteFFmpeg.stdin.write(buffer));
+    spriteFFmpeg.stdin.end();
+
+    await new Promise((resolve, reject) => {
+      spriteFFmpeg.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`FFmpeg process exited with code ${code}`));
+        }
       });
+    });
 
-      const totalImages = Math.ceil(imageBuffers.length / (ceils * ceils));
-      const spriteConfig = {
-          create: {
-              width: width * ceils,
-              height: height * ceils,
-              channels: 4,
-              background: { r: 0, g: 0, b: 0, alpha: 1 }
-          }
-      };
+    const elapsedTime = (Date.now() - startTime) / 1000;
+    client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 100, estimatedTime: formatTime(elapsedTime) }));
 
-      // Enviar el estado al cliente antes de comenzar la generación de thumbnails
-      client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: 'Calculating...' }));
-
-      let pathFilesRoutes = [];
-      let processedImages = 0;
-
-      for (let i = 0; i < totalImages; i++) {
-          const startIndex = i * ceils * ceils;
-          const endIndex = Math.min((i + 1) * ceils * ceils, imageBuffers.length);
-          const chunkBuffers = imageBuffers.slice(startIndex, endIndex);
-
-          const spriteFile = `./thumbnails/output-${i + 1}.png`;
-          const spriteFileAbsolute = `/thumbnails/output-${i + 1}.png`;
-
-          const compositeOptions = chunkBuffers.map((buffer, index) => ({
-              input: buffer,
-              top: Math.floor(index / ceils) * height,
-              left: (index % ceils) * width,
-              ...spriteConfig
-          }));
-
-          await sharp(spriteConfig).composite(compositeOptions).toFile(spriteFile);
-          pathFilesRoutes.push(spriteFileAbsolute);
-          processedImages++;
-
-          const progress = (processedImages / totalImages) * 100;
-          const elapsedTime = (Date.now() - startTime) / 1000;
-          const estimatedTotalTime = (elapsedTime / processedImages) * totalImages;
-          const estimatedRemainingTime = estimatedTotalTime - elapsedTime;
-
-          client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: progress.toFixed(2), estimatedTime: formatTime(estimatedRemainingTime) }));
-      }
-
-      return pathFilesRoutes;
+    return ['./thumbnails/combined-sprite.png'];
   } catch (error) {
-      console.error("Error generating sprite: ", error);
-      throw error;
+    console.error("Error generating sprite: ", error);
+    throw error;
   }
 };
 
