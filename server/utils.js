@@ -35,6 +35,11 @@ export const generateThumbnails = async (path, width, height, ceils, client) => 
 
     client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: 'Calculating...' }));
 
+    const outputDir = "./thumbnails";
+    if (!fs.existsSync(outputDir)){
+        fs.mkdirSync(outputDir);
+    }
+
     const spriteArgs = [
       "-i", "-",
       "-filter_complex", `tile=${ceils}x${ceils}`,
@@ -48,9 +53,16 @@ export const generateThumbnails = async (path, width, height, ceils, client) => 
     imageBuffers.forEach((buffer) => spriteFFmpeg.stdin.write(buffer));
     spriteFFmpeg.stdin.end();
 
+    const generatedFiles = [];
     await new Promise((resolve, reject) => {
       spriteFFmpeg.on("close", (code) => {
         if (code === 0) {
+          const files = fs.readdirSync(outputDir);
+          files.forEach(file => {
+            if (file.startsWith('output-') && file.endsWith('.png')) {
+              generatedFiles.push("/thumbnails/" + file);
+            }
+          });
           resolve();
         } else {
           reject(new Error(`FFmpeg process exited with code ${code}`));
@@ -61,7 +73,7 @@ export const generateThumbnails = async (path, width, height, ceils, client) => 
     const elapsedTime = (Date.now() - startTime) / 1000;
     client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 100, estimatedTime: formatTime(elapsedTime) }));
 
-    return ['./thumbnails/combined-sprite.png'];
+    return generatedFiles;
   } catch (error) {
     console.error("Error generating sprite: ", error);
     throw error;

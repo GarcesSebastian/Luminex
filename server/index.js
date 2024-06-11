@@ -183,7 +183,7 @@ app.post('/convert', upload.single('file'), async (req, res) => {
 });
 
 server.listen(port, () => {
-    console.log(`Example app listening at http://192.168.1.10:${port}`);
+    console.log(`Example app listening at http://localhost:${port}`);
 });
 
 function convertResolution(inputPath, outputPath, scaleFilter){
