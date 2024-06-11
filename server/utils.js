@@ -3,7 +3,6 @@ import fs from 'fs';
 import { spawn } from "child_process";
 import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
-import sharp from "sharp";
 import * as globals from "./globals.js";
 
 const ffprobePathResolved = ffprobePath.path || ffprobePath;

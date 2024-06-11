@@ -7,7 +7,6 @@ import * as States from '../ts/States';
 import { ErrorAlert } from './Alerts/Error';
 import { Loader } from './Loaders/Loader';
 import * as Functions from '../ts/Functions';
-import { url } from 'inspector';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");

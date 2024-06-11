@@ -93,9 +93,6 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     const thumbnailsPath = path.join('thumbnails');
     const videosPath = path.join('videos');
 
-    client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: "0 minutes" }));
-
-
     if (!fs.existsSync(thumbnailsPath)) {
         fs.mkdirSync(thumbnailsPath, { recursive: true });
     }
@@ -111,7 +108,7 @@ app.post("/upload", upload.single('file'), async (req, res) => {
     });
 
     if(client){
-        client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: "0 minutes" }));
+        client.send(JSON.stringify({ message: 'Generating thumbnails...', progress: 0, estimatedTime: "Calculating..." }));
     }
 
     if(!globals.IS_GENERATE_VIDEOS){
