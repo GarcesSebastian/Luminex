@@ -1,4 +1,4 @@
-import MediaPlayer from '@/app/components/MediaPlayer';
+import MediaPlayer from '@/app/components/Luminex/MediaPlayer';
 
 export default function Home() {
   return (

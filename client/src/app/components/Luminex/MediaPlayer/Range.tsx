@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import * as Globals from '../../ts/globals'
+import * as Globals from '../../../ts/globals'
 
 export default function Range(props: any) {
     const [valuePreview, setValuePreview] = useState("00:00");

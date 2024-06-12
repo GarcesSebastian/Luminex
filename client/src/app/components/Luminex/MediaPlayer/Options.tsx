@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/alt-text */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +12,6 @@ export default function Options(props: any) {
 
     const [quality_selected, setQuality_selected] = useState<string>("1080p");
     const [speed_selected, setSpeed_selected] = useState<string>("Normal");
-    let intervalMouseEnter: NodeJS.Timeout;
 
     function formattedSeconds(seconds: number){
         const minutes = Math.floor(seconds / 60);
@@ -34,7 +35,6 @@ export default function Options(props: any) {
     }
 
     const range = document.querySelector('#range-sound') as HTMLInputElement;
-
     const doc = document.documentElement;
     function updateRange() {
         doc.style.setProperty('--RANGE-VALUE', `${range.value}%`);
@@ -73,8 +73,6 @@ export default function Options(props: any) {
         }
     }
 
-    const [isMouseMoving, setIsMouseMoving] = useState(false);
-
     const optionsMouseLeave = () => {
         props.setIsView(false);
     }
@@ -84,29 +82,43 @@ export default function Options(props: any) {
         props.setIsView(true);
     }
 
-    const optionsMouseMove = () => {
-        setIsMouseMoving(true);
-        if (!props.isView) {
-            props.setIsView(true);
+    function changeOptions (isView: boolean) {
+        const options_content = document.querySelector('#options-content') as HTMLElement;
+        const header_options = options_content?.querySelector("header") as HTMLElement;
+        const section_options = options_content?.querySelector("section") as HTMLElement;
+        const footer_options = options_content?.querySelector("footer") as HTMLElement;
+
+        if(!options_content || !header_options || !section_options || !footer_options) return ;
+
+        if(!isView){
+            header_options?.classList.replace("flex", "hidden");
+            section_options?.classList.replace("flex", "hidden");
+            footer_options?.classList.replace("flex", "hidden");
+        }else{
+            header_options?.classList.replace("hidden", "flex");
+            section_options?.classList.replace("hidden", "flex");
+            footer_options?.classList.replace("hidden", "flex");
         }
     }
 
-    // useEffect(() => {
-    //     let timeoutMouseStop: NodeJS.Timeout | undefined;
-        
-    //     if (isMouseMoving) {
-    //         clearTimeout(timeoutMouseStop);
-    //         timeoutMouseStop = setTimeout(() => {
-    //             setIsMouseMoving(false);
-    //             if (props.isView) {
-    //                 props.setIsView(false);
-    //             }
-    //         }, 3000);
-    //     }
-    //     return () => {
-    //         clearTimeout(timeoutMouseStop);
-    //     };
-    // }, [isMouseMoving, props.isView]);
+    let mouseMoveTimer: any;
+    const mouseStopTimeout = 5000;
+
+    function onMouseStop() {
+        console.log("Mouse stop");
+        changeOptions(false);
+    }
+
+    function onMouseMove() {
+        console.log("Mouse move");
+        changeOptions(true);
+    }
+
+    const optionsMouseMove = () => {
+        clearTimeout(mouseMoveTimer);
+        onMouseMove();
+        mouseMoveTimer = setTimeout(onMouseStop, mouseStopTimeout);
+    }
 
     const handleShowSettings = () => {
         const settings = document.querySelector("#settings-video") as HTMLElement;
@@ -190,7 +202,7 @@ export default function Options(props: any) {
                             </svg>
                         </button>
 
-                        <button onClick={props.eventPlay} id="btn-play" className='text-white px-3 py-2 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
+                        <button onClick={props.handlePlayVideo} id="btn-play" className='text-white px-3 py-2 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
                             <img id="image-player-play" src="/icons/player-pause.svg" className="w-5 h-5"/>
                         </button>
 

@@ -1,12 +1,13 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Options from './MediaPlayer/Options';
 import VideoPlayer from './MediaPlayer/VideoPlayer';
-import * as States from '../ts/States';
 import { ErrorAlert } from './Alerts/Error';
 import { Loader } from './Loaders/Loader';
-import * as Functions from '../ts/Functions';
+import * as Functions from '../../ts/Functions';
+import { log } from 'console';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
@@ -18,8 +19,6 @@ export default function MediaPlayer() {
     const [thumbnails, setThumbnails] = useState<{ image: string, value: number }[] | undefined>([]);
     const [thumbnailFather, setThumbnailFather] = useState<string>();
     const [isUploading, setIsUploading] = useState<boolean>(false);
-    const [seconds, setSeconds] = useState<number>(0);
-    const [isCounting, setIsCounting] = useState<boolean>(false);
     const [value, setValue] = useState(currentTime);
     const [volume, setVolume] = useState(1);
     const [isView, setIsView] = useState<boolean>(false);
@@ -53,34 +52,10 @@ export default function MediaPlayer() {
     }, [isUploading]);
 
     useEffect(() => {
-        setSeconds(States.timeCount(isCounting));
-    }, [isCounting]);
-
-    useEffect(() => {
         if (videoElement) {
             videoElement.volume = volume;
         }
     }, [volume]);
-
-    useEffect(() => {
-        const options_content = document.querySelector('#options-content') as HTMLElement;
-        const header_options = options_content?.querySelector("header") as HTMLElement;
-        const section_options = options_content?.querySelector("section") as HTMLElement;
-        const footer_options = options_content?.querySelector("footer") as HTMLElement;
-
-        if(!options_content || !header_options || !section_options || !footer_options) return ;
-
-        if(!isView){
-            header_options?.classList.replace("flex", "hidden");
-            section_options?.classList.replace("flex", "hidden");
-            footer_options?.classList.replace("flex", "hidden");
-        }else{
-            header_options?.classList.replace("hidden", "flex");
-            section_options?.classList.replace("hidden", "flex");
-            footer_options?.classList.replace("hidden", "flex");
-        }
-
-    },[isView])
 
     useEffect(() => {
         const alertError = document.querySelector("#alertError") as HTMLElement;
@@ -155,7 +130,6 @@ export default function MediaPlayer() {
             document.querySelector("#preview-time-generate")?.classList.replace("flex", "hidden");
             document.querySelector("#content-upload-file")?.classList.replace("grid", "hidden");
 
-            setIsCounting(true);
             const videoURL = URL.createObjectURL(file);
             setVideoSrc(videoURL);
             setNamePlayer(file.name);
@@ -213,23 +187,23 @@ export default function MediaPlayer() {
 
             setIsUploading(false);
             setPlaying(false);
-            setIsCounting(false);
             document.querySelector("#preview-time-generate")?.classList.replace("hidden", "flex");
             document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
         }
 
         setIsUploading(false);
         setPlaying(false);
-        setIsCounting(false);
         document.querySelector("#preview-time-generate")?.classList.replace("hidden", "flex");
         document.querySelector("#content-upload-file")?.classList.replace("hidden", "grid");
     };
     
     const handlePlayVideo = (e: React.MouseEvent<HTMLButtonElement> | undefined) => {
 
+        const id_allowed = ["section-select", "btn-play-center", "image-player-play-center", "btn-play", "image-player-play"]
+
         if(e){
             const target = e.target as HTMLButtonElement;
-            if(target.id !== "section-select" && target.id !== "btn-play-center" && target.id !== "image-player-play-center"){
+            if(!id_allowed.includes(target.id)){
                 return;
             }
         }
@@ -279,12 +253,11 @@ export default function MediaPlayer() {
         <div className='flex flex-col w-full items-center gap-y-5'>
             {videoSrc && (
                 <div className='bg-black w-fit h-fit relative rounded-md shadow-lg shadow-gray-900'>
-                    <div id="content-video" className="group hidden">
+                    <div id="content-video" className="group flex">
                         <VideoPlayer videoSrc={videoSrc} onVideoLoaded={handleVideoLoaded} />
                         <Options
                             videoSrc={videoSrc}
                             name={namePlayer}
-                            eventPlay={handlePlayVideo}
                             isPlaying={isPlaying}
                             currentTime={currentTime}
                             duration={duration}
@@ -336,12 +309,6 @@ export default function MediaPlayer() {
                     </div>
                 </div>
             </div>
-
-            <div id="preview-time-generate" className="w-fit hidden mb-5 text-white font-bold">
-                <div className="w-fit h-fit p-1.5 bg-indigo-600 rounded-md">
-                    Time generate: {(seconds / 1000)}s
-                </div>
-            </div>  
         </div>
     );
 }
