@@ -1,5 +1,3 @@
-/* eslint-disable jsx-a11y/alt-text */
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -7,6 +5,7 @@ import Range from "./Range";
 import { Settings } from './Settings';
 import { QualityPopup } from '../Popups/QualityPopup';
 import { SpeedPopup } from '../Popups/SpeedPopup';
+import { Node } from 'postcss';
 
 export default function Options(props: any) {
 
@@ -74,12 +73,11 @@ export default function Options(props: any) {
     }
 
     const optionsMouseLeave = () => {
-        props.setIsView(false);
+        changeOptions(false)
     }
 
     const optionsMouseEnter = () => {
-        if (props.isView) return;
-        props.setIsView(true);
+        changeOptions(true)
     }
 
     function changeOptions (isView: boolean) {
@@ -101,23 +99,26 @@ export default function Options(props: any) {
         }
     }
 
-    let mouseMoveTimer: any;
-    const mouseStopTimeout = 5000;
-
+    const [isTimeoutActive, setIsTimeoutActive] = useState<boolean>(false);
+    let mouseMoveTimer: NodeJS.Timeout;
+    const mouseStopTimeout = 3000;
+    
     function onMouseStop() {
-        console.log("Mouse stop");
         changeOptions(false);
+        setIsTimeoutActive(false);
     }
-
+    
     function onMouseMove() {
-        console.log("Mouse move");
         changeOptions(true);
     }
-
+    
     const optionsMouseMove = () => {
         clearTimeout(mouseMoveTimer);
         onMouseMove();
-        mouseMoveTimer = setTimeout(onMouseStop, mouseStopTimeout);
+        if (!isTimeoutActive) {
+            setIsTimeoutActive(true);
+            mouseMoveTimer = setTimeout(onMouseStop, mouseStopTimeout);
+        }
     }
 
     const handleShowSettings = () => {
@@ -125,25 +126,25 @@ export default function Options(props: any) {
         const q_settings = document.querySelector("#q-settings-video") as HTMLElement;
         const s_settings = document.querySelector("#s-settings-video") as HTMLElement;
 
-        if (settings.classList.contains("hidden")) {
-            settings.classList.replace("hidden", "flex");
+        if (settings.classList.contains("opacity-0")) {
+            settings.classList.replace("opacity-0", "opacity-100");
         } else {
-            settings.classList.replace("flex", "hidden");
+            settings.classList.replace("opacity-100", "opacity-0");
         }
 
-        if (!q_settings.classList.contains("hidden")) {
-            q_settings.classList.replace("flex", "hidden");
-            settings.classList.replace("flex", "hidden");
+        if (!q_settings.classList.contains("opacity-0")) {
+            q_settings.classList.replace("opacity-100", "opacity-0");
+            settings.classList.replace("opacity-100", "opacity-0");
         }
 
-        if (!s_settings.classList.contains("hidden")) {
-            s_settings.classList.replace("flex", "hidden");
-            settings.classList.replace("flex", "hidden");
+        if (!s_settings.classList.contains("opacity-0")) {
+            s_settings.classList.replace("opacity-100", "opacity-0");
+            settings.classList.replace("opacity-100", "opacity-0");
         }
     }
 
     return(
-        <div id="options-content" onMouseEnter={optionsMouseEnter} onMouseMove={optionsMouseMove} onMouseLeave={optionsMouseLeave} className="absolute flex flex-col top-0 left-0 w-full h-full rounded-md">
+        <div id="options-content" onMouseEnter={optionsMouseEnter} onMouseMove={optionsMouseMove} onMouseLeave={optionsMouseLeave} className="opacity-100 absolute flex flex-col top-0 left-0 w-full h-full rounded-md">
             <header className='text-white text-lg bg-black/50 px-3 w-full h-fit py-2 flex justify-between items-center'>
                 <h2>
                     {props.name}

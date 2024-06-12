@@ -7,7 +7,6 @@ import VideoPlayer from './MediaPlayer/VideoPlayer';
 import { ErrorAlert } from './Alerts/Error';
 import { Loader } from './Loaders/Loader';
 import * as Functions from '../../ts/Functions';
-import { log } from 'console';
 
 export default function MediaPlayer() {
     const [videoSrc, setVideoSrc] = useState("");
@@ -21,7 +20,6 @@ export default function MediaPlayer() {
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [value, setValue] = useState(currentTime);
     const [volume, setVolume] = useState(1);
-    const [isView, setIsView] = useState<boolean>(false);
     const [isError, setIsError] = useState<boolean>(false);
     const [qualities, setQuality] = useState<any[]>([]);
     const [qualitiesRange, setQualityRange] = useState<string[]>([]);
@@ -66,7 +64,6 @@ export default function MediaPlayer() {
         }else{
             alertError?.classList.replace("animate-deployment", "animate-deployment-invert");
             alertError?.classList.replace("flex", "hidden");
-
             return;
         }
 
@@ -254,7 +251,10 @@ export default function MediaPlayer() {
             {videoSrc && (
                 <div className='bg-black w-fit h-fit relative rounded-md shadow-lg shadow-gray-900'>
                     <div id="content-video" className="group flex">
-                        <VideoPlayer videoSrc={videoSrc} onVideoLoaded={handleVideoLoaded} />
+                        <VideoPlayer 
+                            videoSrc={videoSrc} 
+                            onVideoLoaded={handleVideoLoaded}
+                        />
                         <Options
                             videoSrc={videoSrc}
                             name={namePlayer}
@@ -268,8 +268,6 @@ export default function MediaPlayer() {
                             setValue={setValue}
                             setVolume={setVolume}
                             volume={volume}
-                            isView={isView}
-                            setIsView={setIsView}
                             thumbnailFather={thumbnailFather}
                             setThumbnailFather={setThumbnailFather}
                             videoPlayer={videoElement}
