@@ -1,6 +1,16 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
+interface PropsMediaPlayer{
+    name: string,
+    duration: number,
+    thumbnails: { position: {x: number, y: number}, value: number }[] | undefined,
+    thumbnailFather: string | undefined,
+    isUploading: boolean,
+    qualities: any[],
+    qualitiesRange: string[],
+}
+
 import React, { useState, useEffect } from 'react';
 import Options from './MediaPlayer/Options';
 import VideoPlayer from './MediaPlayer/VideoPlayer';
@@ -34,6 +44,50 @@ export default function MediaPlayer() {
         }
         return null;
     }
+
+    async function changeState(state: boolean){
+        const change_state = await fetch('http://localhost:4000/changeQuality', {
+            method: "POST",
+            body: JSON.stringify({ state: state }),
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+
+        if(!change_state.ok){
+            console.log("Error changing state");
+            return;
+        }
+
+    }
+
+    useEffect(() => {
+        const generateQualities = document.querySelector("#generateQualities") as HTMLInputElement;
+
+        const switchElement = document.querySelector(".switch") as HTMLElement;
+        if (switchElement) {
+          const paragraphElement = switchElement.querySelector("span");
+          if (paragraphElement) {
+            paragraphElement.textContent = "Generate qualities available";
+          }
+        }
+
+        if (generateQualities) {
+            const generateQualitiesValue = JSON.parse(localStorage.getItem("generateQualities") as string);          
+            changeState(generateQualitiesValue);
+
+            if (generateQualitiesValue) {
+                generateQualities.checked = generateQualitiesValue;
+                (document.querySelector(".switch") as HTMLElement).style.backgroundColor = "rgb(99, 102, 241)";
+                (document.querySelector(".switch") as HTMLElement).style.boxShadow = "0px 0px 40px rgba(99, 102, 241, 0.438)"
+                return;
+            }
+
+            generateQualities.checked = false;
+            (document.querySelector(".switch") as HTMLElement).style.backgroundColor = "rgb(46, 46, 46)";
+            (document.querySelector(".switch") as HTMLElement).style.boxShadow = "none"
+        }
+    },[])
 
     useEffect(() => {
         const contentVideo = document.querySelector("#content-video");
@@ -246,6 +300,21 @@ export default function MediaPlayer() {
         setCurrentTime((document.querySelector("#videoPlayer") as HTMLVideoElement)?.currentTime);
     };
 
+    const changeToggleGenerateQualities = () => {
+        const generateQualities = document.querySelector("#generateQualities") as HTMLInputElement;
+        changeState(generateQualities.checked);
+
+        if (generateQualities.checked) {
+            localStorage.setItem("generateQualities", JSON.stringify(true));
+            (document.querySelector(".switch") as HTMLElement).style.backgroundColor = "rgb(99, 102, 241)";
+            (document.querySelector(".switch") as HTMLElement).style.boxShadow = "0px 0px 40px rgba(99, 102, 241, 0.438)"
+        } else {
+            localStorage.setItem("generateQualities", JSON.stringify(false));
+            (document.querySelector(".switch") as HTMLElement).style.backgroundColor = "rgb(46, 46, 46)";
+            (document.querySelector(".switch") as HTMLElement).style.boxShadow = "none"
+        }
+    }
+
     return (
         <div className='flex flex-col w-full items-center gap-y-5'>
             {videoSrc && (
@@ -281,7 +350,7 @@ export default function MediaPlayer() {
             <ErrorAlert message='El tipo de archivo no es compatible. :)' id="alertError" isError={isError} setIsError={setIsError}/>
             <Loader id='loader' isLoading={isUploading}/>
 
-            <div id="content-upload-file" className="w-full max-w-2xl grid relative gap-5 mb-5">
+            <div id="content-upload-file" className="w-full max-w-2xl grid relative gap-5">
                 <div className="w-full py-9">
                     <div className="grid gap-3">
                         <div className="grid gap-2">
@@ -307,6 +376,24 @@ export default function MediaPlayer() {
                     </div>
                 </div>
             </div>
+
+            <input type="checkbox" id="generateQualities" onChange={changeToggleGenerateQualities}/>
+            <label htmlFor="generateQualities" className="switch mb-5 -mt-5">
+                <span>
+                    Loading...
+                </span>
+                <svg
+                    className="slider"
+                    viewBox="0 0 512 512"
+                    height="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                    d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V256c0 17.7 14.3 32 32 32s32-14.3 32-32V32zM143.5 120.6c13.6-11.3 15.4-31.5 4.1-45.1s-31.5-15.4-45.1-4.1C49.7 115.4 16 181.8 16 256c0 132.5 107.5 240 240 240s240-107.5 240-240c0-74.2-33.8-140.6-86.6-184.6c-13.6-11.3-33.8-9.4-45.1 4.1s-9.4 33.8 4.1 45.1c38.9 32.3 63.5 81 63.5 135.4c0 97.2-78.8 176-176 176s-176-78.8-176-176c0-54.4 24.7-103.1 63.5-135.4z"
+                    ></path>
+                </svg>    
+            </label>
+
         </div>
     );
 }

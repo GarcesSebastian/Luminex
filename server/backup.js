@@ -38,10 +38,9 @@ export const test = async () => {
         console.error('Error processing request:', error);
         return res.status(500).json({ error: 'Error processing request' });
     }
-  }
+}
   
-  
-  async function generateThumbnails(duration, thumbnailsPath, imageCombination, i, thumbnailPromises, filePath, thumbnailOutput, intervalsDuration, thumbnailsPathRelative, client) {
+async function generateThumbnails(duration, thumbnailsPath, imageCombination, i, thumbnailPromises, filePath, thumbnailOutput, intervalsDuration, thumbnailsPathRelative, client) {
     for (let x = 0; x < ((duration - (ceilsAll * i)) < ceilsAll ? (duration - (ceilsAll * i)) : ceilsAll); x++) {
         const outputPath = path.join(thumbnailsPath, `thumbnail-${x}.png`);
         thumbnailPromises.push(
@@ -70,9 +69,9 @@ export const test = async () => {
     
     const listOutput = await mergeThumbnails(thumbnailsPath, thumbnailsPathRelative, i);
     thumbnailOutput.push(...listOutput);
-  }
+}
   
-  function mergeThumbnails(thumbnailsPath, thumbnailsPathRelative, i) {
+function mergeThumbnails(thumbnailsPath, thumbnailsPathRelative, i) {
     return new Promise((resolve, reject) => {
         const thumbnailOutputTest = [];
         const cmd = `${ffmpegPath} -i ${includeTmp}thumbnails/thumbnail-%d.png -vf "scale=175:100, tile=${ceiling}x${ceiling}" ${includeTmp}thumbnails/output-${i + 1}.png`;
@@ -101,4 +100,4 @@ export const test = async () => {
             resolve(thumbnailOutputTest);
         })
     });
-  }
+}

@@ -5,7 +5,6 @@ import Range from "./Range";
 import { Settings } from './Settings';
 import { QualityPopup } from '../Popups/QualityPopup';
 import { SpeedPopup } from '../Popups/SpeedPopup';
-import { Node } from 'postcss';
 
 export default function Options(props: any) {
 
@@ -113,6 +112,7 @@ export default function Options(props: any) {
     }
     
     const optionsMouseMove = () => {
+        return
         clearTimeout(mouseMoveTimer);
         onMouseMove();
         if (!isTimeoutActive) {
@@ -126,20 +126,20 @@ export default function Options(props: any) {
         const q_settings = document.querySelector("#q-settings-video") as HTMLElement;
         const s_settings = document.querySelector("#s-settings-video") as HTMLElement;
 
-        if (settings.classList.contains("opacity-0")) {
-            settings.classList.replace("opacity-0", "opacity-100");
+        if (settings.classList.contains("hidden")) {
+            settings.classList.replace("hidden", "flex");
         } else {
-            settings.classList.replace("opacity-100", "opacity-0");
+            settings.classList.replace("flex", "hidden");
         }
 
-        if (!q_settings.classList.contains("opacity-0")) {
-            q_settings.classList.replace("opacity-100", "opacity-0");
-            settings.classList.replace("opacity-100", "opacity-0");
+        if (!q_settings.classList.contains("hidden")) {
+            q_settings.classList.replace("flex", "hidden");
+            settings.classList.replace("flex", "hidden");
         }
 
-        if (!s_settings.classList.contains("opacity-0")) {
-            s_settings.classList.replace("opacity-100", "opacity-0");
-            settings.classList.replace("opacity-100", "opacity-0");
+        if (!s_settings.classList.contains("hidden")) {
+            s_settings.classList.replace("flex", "hidden");
+            settings.classList.replace("flex", "hidden");
         }
     }
 

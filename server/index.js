@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import * as utils from "./utils.js";
+import * as utils from "./functions.js";
 import * as globals from "./globals.js";
 
 const ffmpegPathRoute = path.join('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
@@ -178,6 +178,29 @@ app.post('/convert', upload.single('file'), async (req, res) => {
 
     client.send(JSON.stringify({ message: 'Conversion finished', progress: 100, estimatedTime: "0 minutes" }));
 });
+
+app.post("/changeQuality", (req, res) => {
+
+    if(!req.body){
+        return res.status(400).json({message: "No data found"});
+    }
+
+    const {state} = req.body;
+    globals.setQualityMax(state)
+
+    res.json({ message: "Quality changed successfully", quality: globals.IS_QUALITY_MAX });
+})
+
+app.post("/changeGeneareteVideos", (req, res) => {
+        if(!req.body){
+            return res.status(400).json({message: "No data found"});
+        }
+    
+        const {state} = req.body;
+        globals.setGenerateVideos(state)
+    
+        res.json({ message: "Generate videos changed successfully", generate: globals.IS_GENERATE_VIDEOS });
+})
 
 server.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);

@@ -269,3 +269,34 @@ border-radius: 1.5px;
     transform: scale(0.25) rotate(45deg);
   }
 }
+
+#generateQualities {
+  display: none;
+}
+
+.switch {
+  position: relative;
+  width: fit-content;
+  padding: 10px 20px;
+  background-color: rgb(46, 46, 46);
+  border-radius: 50px;
+  z-index: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: white;
+  font-size: 0.9em;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.switch svg path {
+  fill: white;
+}
+/* 
+#generateQualities:not(:checked) + .switch {
+  background-color: rgb(99, 102, 241);
+  box-shadow: 0px 0px 40px rgba(99, 102, 241, 0.438);
+} */
