@@ -1,3 +1,5 @@
+"use client";
+
 import MediaPlayer from '@/app/components/Luminex/MediaPlayer';
 
 export default function Home() {

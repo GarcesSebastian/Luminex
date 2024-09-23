@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, RefCallback } from 'react';
 import Range from "./Range";
 import { Settings } from './Settings';
 import { QualityPopup } from '../Popups/QualityPopup';
@@ -10,6 +10,20 @@ export default function Options(props: any) {
 
     const [quality_selected, setQuality_selected] = useState<string>("1080p");
     const [speed_selected, setSpeed_selected] = useState<string>("Normal");
+    const [isChangingMousePosition, setIsChangingMousePosition] = useState(false);
+    const [isEnterMouseRange, setIsEnterMouseRange] = useState(false);
+    const [lastTap, setLastTap] = useState(0);
+
+    const handleDoubleTap = (callback: any) => {
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+        
+        if (now - lastTap < DOUBLE_TAP_DELAY) {
+            callback();
+        }
+        
+        setLastTap(now);
+    };
 
     function formattedSeconds(seconds: number){
         const minutes = Math.floor(seconds / 60);
@@ -98,13 +112,25 @@ export default function Options(props: any) {
         }
     }
 
-    const [isTimeoutActive, setIsTimeoutActive] = useState<boolean>(false);
     let mouseMoveTimer: NodeJS.Timeout;
     const mouseStopTimeout = 3000;
-    
-    function onMouseStop() {
+
+    async function onMouseStop() {
+
+        console.log("-------init-------");
+        
+
+        console.log("Video paused ", props.videoPlayer.paused);
+        console.log("Range mouse enter " ,isEnterMouseRange);
+
+        if(isEnterMouseRange || props.videoPlayer.paused) return;
+
+        console.log("Mouse stopped");
         changeOptions(false);
-        setIsTimeoutActive(false);
+
+        
+        console.log("-------end-------");
+        return;
     }
     
     function onMouseMove() {
@@ -112,13 +138,10 @@ export default function Options(props: any) {
     }
     
     const optionsMouseMove = () => {
-        return
+        return;
         clearTimeout(mouseMoveTimer);
         onMouseMove();
-        if (!isTimeoutActive) {
-            setIsTimeoutActive(true);
-            mouseMoveTimer = setTimeout(onMouseStop, mouseStopTimeout);
-        }
+        mouseMoveTimer = setTimeout(onMouseStop, mouseStopTimeout);
     }
 
     const handleShowSettings = () => {
@@ -153,29 +176,51 @@ export default function Options(props: any) {
                 <img src="/luminex/logo-best.jpeg" className="w-10 h-10 rounded-md"/>
             </header>
 
-            <section id="section-select" onClick={props.handlePlayVideo} className="w-full h-full relative flex justify-center items-center z-10">
-                <button onClick={props.handlePlayVideo} id="btn-play-center" className='text-white px-3 py-2 hidden animate-showOpacity rounded-md cursor-pointer bg-indigo-600/70 transition-all duration-300 ease-out'>
-                    <img id="image-player-play-center" src="/icons/player-pause.svg" className="w-14 h-14"/>
-                </button>
+            <section className="w-full h-full relative flex justify-center items-center">
+                
+                <article id="section-select" onClick={props.handlePlayVideo} className="w-full h-full absolute flex justify-center items-center z-10">
+                    <button onClick={props.handlePlayVideo} id="btn-play-center" className='text-white px-3 py-2 hidden animate-showOpacity rounded-md cursor-pointer bg-indigo-600/70 transition-all duration-300 ease-out'>
+                        <img id="image-player-play-center" src="/icons/player-pause.svg" className="w-14 h-14"/>
+                    </button>
 
-                <Settings 
-                    quality_selected={quality_selected} 
-                    setQuality_selected={setQuality_selected} 
-                    speed_selected={speed_selected}
-                    setSpeed_selected={setSpeed_selected}
+                    <Settings 
+                        quality_selected={quality_selected} 
+                        setQuality_selected={setQuality_selected} 
+                        speed_selected={speed_selected}
+                        setSpeed_selected={setSpeed_selected}
+                        />
+                    <QualityPopup qualities={props.qualities}
+                        quality_selected={quality_selected} 
+                        setQuality_selected={setQuality_selected} 
+                        isPlaying={props.isPlaying}
+                        qualitiesRange={props.qualitiesRange}
                     />
-                <QualityPopup qualities={props.qualities}
-                    quality_selected={quality_selected} 
-                    setQuality_selected={setQuality_selected} 
-                    isPlaying={props.isPlaying}
-                    qualitiesRange={props.qualitiesRange}
-                />
-                <SpeedPopup speed_selected={speed_selected} setSpeed_selected={setSpeed_selected}/>
+                    <SpeedPopup speed_selected={speed_selected} setSpeed_selected={setSpeed_selected}/>
+                </article>
+
+                <article 
+                    id='left-screen'
+                    className='w-[5rem] h-full absolute left-0 z-20'
+                    onDoubleClick={handleBackward}
+                    onTouchEnd={() => handleDoubleTap(handleBackward)}
+                ></article>
+
+                <article 
+                    id='right-screen' 
+                    className='w-[5rem] h-full absolute right-0 z-20'
+                    onDoubleClick={handleForward}
+                    onTouchEnd={() => handleDoubleTap(handleForward)}
+                ></article>
+
             </section>
 
             <footer className='w-full h-fit py-2 bg-black/50 bottom-0 px-2 gap-y-2 flex flex-col'>
 
-                <div className="w-full h-fit px-2">
+                <div className="w-full h-fit px-2 max-sm:flex max-sm:gap-x-2 max-sm:items-center">
+                    <span className='text-white max-sm:w-[7rem] max-[560px]:w-[9rem] max-sm:text-sm sm:hidden'>
+                        {formattedSeconds(props.currentTime)} / {formattedSeconds(props.duration)}
+                    </span>
+
                     <Range 
                         videoPlayer={props.videoPlayer}
                         currentTime={props.currentTime}
@@ -188,12 +233,16 @@ export default function Options(props: any) {
                         setValue={props.setValue}
                         thumbnailFather={props.thumbnailFather}
                         setThumbnailFather={props.setThumbnailFather}
+                        isChangingMousePosition={isChangingMousePosition}
+                        setIsChangingMousePosition={setIsChangingMousePosition}
+                        isEnterMouseRange={isEnterMouseRange}
+                        setIsEnterMouseRange={setIsEnterMouseRange}
                     />
                 </div>
 
                 <div className="w-full h-fit flex justify-between items-center">
                     <div className="w-full h-fit flex gap-x-3 px-2 items-center">
-                        <button onClick={handleBackward} className='text-white px-3 py-2 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
+                        <button onClick={handleBackward} className='max-sm:hidden text-white px-3 py-2 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
                             <svg className="icon icon-tabler icons-tabler-outline icon-tabler-rewind-backward-10 w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M7 9l-3 -3l3 -3" />
@@ -207,7 +256,7 @@ export default function Options(props: any) {
                             <img id="image-player-play" src="/icons/player-pause.svg" className="w-5 h-5"/>
                         </button>
 
-                        <button onClick={handleForward} className='text-white px-3 py-2 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
+                        <button onClick={handleForward} className='max-sm:hidden text-white px-3 py-2 rounded-md cursor-pointer hover:bg-indigo-600/70 transition-all duration-300 ease-out'>
                             <svg className="icon icon-tabler icons-tabler-outline icon-tabler-rewind-forward-10 w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M17 9l3 -3l-3 -3" />
@@ -217,7 +266,7 @@ export default function Options(props: any) {
                             </svg>
                         </button>
 
-                        <button id="sound-icon" onMouseEnter={handleSoundEnter} onMouseLeave={handleSoundLeave} onClick={handleSoundEnter} className='text-white px-3 py-2 w-fit h-fit flex justify-center items-center gap-x-3 rounded-md cursor-pointer'>
+                        <button id="sound-icon" onMouseEnter={handleSoundEnter} onMouseLeave={handleSoundLeave} onClick={handleSoundEnter} className='text-white px-3 max-sm:px-0 py-2 w-fit h-fit flex justify-center items-center gap-x-3 rounded-md cursor-pointer'>
                             <svg className="icon icon-tabler icons-tabler-outline icon-tabler-volume-2 w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"  fill="none"  stroke="white"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M15 8a5 5 0 0 1 0 8" />
@@ -228,7 +277,7 @@ export default function Options(props: any) {
                             <input type="range" id="range-sound" value={props.volume} onChange={updateRange} className="w-0 h-2.5 transition-all duration-300 ease-in-out cursor-pointer relative left-0 bg-indigo-600 "/>
                         </button>
 
-                        <span className='text-white'>
+                        <span className='text-white max-sm:hidden'>
                             {formattedSeconds(props.currentTime)} / {formattedSeconds(props.duration)}
                         </span>
                     </div>

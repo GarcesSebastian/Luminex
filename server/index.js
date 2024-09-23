@@ -15,13 +15,11 @@ ffmpeg.setFfmpegPath(ffmpegPathRoute);
 
 const includeTmp = "";
 const ceiling = 12;
-const ceilsAll = ceiling * ceiling;
 
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const port = 4000;
-
 
 app.use(cors({
     origin: '*',

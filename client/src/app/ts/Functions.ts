@@ -6,7 +6,7 @@ export async function changeVideoResolution(videoFile: any, resolution: any, ind
         formData.append('index', index.toString());
 
         try {
-            const response = await fetch('http://localhost:4000/convert', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/convert`, {
                 method: 'POST',
                 headers: {
                     'client-id': clientId,

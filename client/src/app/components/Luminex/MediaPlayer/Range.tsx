@@ -5,7 +5,6 @@ export default function Range(props: any) {
     const [valuePreview, setValuePreview] = useState("00:00");
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [mouseClickPosition, setMouseClickPosition] = useState({ x: 0, y: 0 });
-    const [isChangingMousePosition, setIsChangingMousePosition] = useState(false);
     const [progressTime, setProgress] = useState(0);
     const rangeRef = useRef<HTMLInputElement>(null);
     const previewCurrentRef = useRef<HTMLLegendElement>(null);
@@ -46,25 +45,30 @@ export default function Range(props: any) {
     }, [props.currentTime]);
 
     useEffect(() => {
-        if (isChangingMousePosition) {
+        if (props.isChangingMousePosition) {
             changeMousePosition();
         }
-    }, [isChangingMousePosition]);
+    }, [props.isChangingMousePosition]);
 
     const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
         (props.videoPlayer as HTMLVideoElement).pause();
         setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
-        setIsChangingMousePosition(true);
+        props.setIsChangingMousePosition(true);
         changeMousePosition();
     };
 
     const handleMouseUp = () => {
-        setIsChangingMousePosition(false);
+        props.setIsChangingMousePosition(false);
+        console.log(props.isChangingMousePosition);
+        
         if (!props.isPlaying) return;
         (props.videoPlayer as HTMLVideoElement).play();
     };
 
     const handleMouseEnter = () => {
+
+        props.setIsEnterMouseRange(true);
+
         if (previewCurrentRef.current && previewCurrentTIme.current && previewCurrentRefBg.current) {
             previewCurrentRef.current.style.display = "initial";
             previewCurrentTIme.current.style.display = "initial";
@@ -73,6 +77,9 @@ export default function Range(props: any) {
     };
     
     const handleMouseOut = () => {
+
+        props.setIsEnterMouseRange(false);
+
         if (previewCurrentRef.current && previewCurrentTIme.current && previewCurrentRefBg.current) {
             previewCurrentRef.current.style.display = "none";
             previewCurrentTIme.current.style.display = "none";
@@ -81,7 +88,7 @@ export default function Range(props: any) {
     };
 
     const handleMousePressed = (e: React.MouseEvent<HTMLInputElement>) => {
-        if (!isChangingMousePosition) return;
+        if (!props.isChangingMousePosition) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const rangeWidth = rect.width;
@@ -122,7 +129,6 @@ export default function Range(props: any) {
 
         setMousePosition({ x: offsetX > umbral ? umbral + 5 : offsetX < 0 ? -5 : offsetX , y: offsetY });
         setMouseClickPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
-        console.log(newValuePreview, props.duration);
         
         if(newValuePreview > 0 && newValuePreview < props.duration){
             setValuePreview(formattedTime);
@@ -200,7 +206,7 @@ export default function Range(props: any) {
             </div>
 
             <div ref={previewCurrentRef} id="preview-auto" style={{width: Globals.DEFAULT_WIDTH_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL / Globals.DEFAULT_CEILING_THUMBNAIL, top: mousePosition.y - 25, left: mousePosition.x}} className='overflow-hidden hidden absolute z-10'>
-                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('http://localhost:4000${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
+                <div ref={imageCurrentRef} id="content-frame-testt" style={{top: 0, left: 0, width: Globals.DEFAULT_WIDTH_THUMBNAIL, height: Globals.DEFAULT_HEIGHT_THUMBNAIL, backgroundImage: `url('${process.env.NEXT_PUBLIC_API_URL}${props.thumbnailFather}')`, backgroundSize: "cover"}} className="relative bg-blue-500">
                 </div>
             </div>
 

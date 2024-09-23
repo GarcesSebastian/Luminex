@@ -34,6 +34,9 @@ export default function MediaPlayer() {
     const [qualities, setQuality] = useState<any[]>([]);
     const [qualitiesRange, setQualityRange] = useState<string[]>([]);
 
+    const env_url = process.env.NEXT_PUBLIC_API_URL;
+    console.log(env_url)
+
     function getCookieValue(cookieName: string) {
         const cookies = document.cookie.split(';');
         for (let i = 0; i < cookies.length; i++) {
@@ -45,8 +48,8 @@ export default function MediaPlayer() {
         return null;
     }
 
-    async function changeState(state: boolean){
-        const change_state = await fetch('http://localhost:4000/changeQuality', {
+    async function changeState(state: any){
+        const change_state = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/changeQuality`, {
             method: "POST",
             body: JSON.stringify({ state: state }),
             headers: {
@@ -132,7 +135,7 @@ export default function MediaPlayer() {
         formData.append('duration', duration.toString());
 
         try {
-            const response = await fetch('http://localhost:4000/upload', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
                 method: 'POST',
                 headers: {
                     'client-id': getCookieValue('clientId') || 'unknown',

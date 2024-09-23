@@ -21,7 +21,7 @@ export function Loader(data: Props){
     const [progress, setProgress] = useState<number>(0);
 
     useEffect(() => {
-        const socket = new WebSocket('ws://localhost:4000');
+        const socket = new WebSocket(`${process.env.NEXT_PUBLIC_API_WS_URL}`);
 
         const clientId = generateUniqueId();
 
